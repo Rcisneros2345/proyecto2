@@ -1,0 +1,282 @@
+---
+name: UX sistema completo
+overview: Especificación de diseño e implementación por oleadas para homogeneizar las ~82 vistas Blade, reordenar la navegación y alinear modelos/vistas, extendiendo el sistema visual ya definido en `app.css` (naranja, dark/light, componentes Blade) en lugar de inventar una segunda identidad.
+todos:
+  - id: task-boundary
+    content: Cerrar o fusionar TASK-2026-0911 y crear Task Boundary de esta homogeneización (archivos permitidos por oleada)
+    status: completed
+  - id: oleada-0
+    content: "Chrome compartido: x-page-header, filter-bar, data-table+empty, badge DS, layout sin h1 duplicado ni creates en sidebar"
+    status: in_progress
+  - id: oleada-1
+    content: Migrar CRUDs catálogo (areas, puestos, incidencias, permisos, cursos, planes, ciclos) al patrón de lista
+    status: pending
+  - id: oleada-2
+    content: Unificar listas operativas (devices, employees, attendances, puntualidad, fingerprints, queue, firebird UI)
+    status: pending
+  - id: oleada-3
+    content: "Show/forms/academia densa: validación visible, KPI+detalle, horarios sin forzar data-table"
+    status: pending
+  - id: oleada-4-models
+    content: "Architect: mapa y namespaces Rh/Biometric/Sync; laravel actualiza use + tests nivel 3"
+    status: pending
+isProject: false
+---
+
+# Homogeneizar vistas, IA y modelos
+
+## Principio (no rediseñar por gusto)
+
+El producto ya tiene identidad y tokens en [`resources/css/app.css`](resources/css/app.css): naranja `--primary`, DM Sans + JetBrains Mono, dark por defecto + light, layout [`layouts/admin.blade.php`](resources/views/layouts/admin.blade.php). Los documentos [`.opencode/results/ui-design-system.md`](.opencode/results/ui-design-system.md) y [`.opencode/results/ui-audit.md`](.opencode/results/ui-audit.md) coinciden con el código.
+
+El problema no es “falta de diseño”: es **asimetría estructural**. El usuario hace la misma tarea (listar, filtrar, crear, ver detalle) en pantallas que no se parecen. Eso aumenta carga cognitiva y mantenimiento.
+
+**No** cambiar Bootstrap 5.3.3, Vite ni Blade. **No** tocar Firebird, ZKTeco, migraciones de schema ni auth en esta tarea, salvo lo mínimo de menú/permisos de visibilidad.
+
+Clasificación AGENTS: **COMPLEJA** (más de 3 archivos, varias capas, IA, posible namespaces de modelos). Requiere Task Boundary nuevo (el actual `TASK-2026-0911` es otro alcance). Test level: **2** para oleadas de vistas; **3** si se mueven modelos PHP.
+
+```mermaid
+flowchart LR
+  subgraph oleada0 [Oleada 0]
+    tokens[Tokens y chrome]
+    pageHeader[x-page-header]
+    listPattern[Patron lista]
+  end
+  subgraph oleada1 [Oleada 1]
+    nav[Sidebar IA]
+    breadcrumbs[Breadcrumb real]
+  end
+  subgraph oleada2 [Oleada 2]
+    crud[CRUDs analogos]
+    ops[Tablas operativas]
+  end
+  subgraph oleada3 [Oleada 3]
+    models[Namespaces modelos]
+    viewsMap[Vistas alineadas]
+  end
+  oleada0 --> oleada1 --> oleada2 --> oleada3
+```
+
+---
+
+## Diagnóstico (desde el usuario)
+
+1. **Título duplicado / breadcrumb falso**
+   - Observable: el topbar ya pinta `h1` + “Panel › título”; muchas vistas vuelven a poner `h1.h3` (p. ej. [`academia/ciclos/index.blade.php`](resources/views/academia/ciclos/index.blade.php), [`areas/index.blade.php`](resources/views/areas/index.blade.php)). El breadcrumb siempre dice “Panel”, no la sección real.
+   - Tarea: orientarse y no perder contexto.
+   - Impacto: alto (todas las pantallas).
+   - Severidad: alta.
+   - Mejora: un `x-page-header` (título opcional oculto si el layout ya lo muestra; subtítulo + acciones primarias/secundarias). Breadcrumb por `@section('breadcrumb')`.
+
+2. **Listados con tres patrones distintos**
+   - `x-data-table`: ciclos, alumnos, grupos, profesores.
+   - Tabla en `card` + `table-cards`: dispositivos, asistencias, puntualidad, cola, huellas.
+   - Tabla cruda sin empty rico: áreas, puestos, incidencias, cursos, planes, permisos.
+   - Tarea: escanear, filtrar, actuar por fila.
+   - Impacto: alto. Empty de `x-data-table` es “No hay datos” sin CTA; [`partials/empty-state.blade.php`](resources/views/partials/empty-state.blade.php) casi no se usa.
+   - Referencia canónica: [`devices/index.blade.php`](resources/views/devices/index.blade.php) (KPI + heading + tabla + empty con contexto) + `x-filter-bar` de empleados.
+
+3. **Navegación mezclada y acciones duplicadas**
+   - En “Academia” viven Áreas, Puestos, Incidencias, Permisos (son RH/admin).
+   - “Administración” duplica “Registrar dispositivo” y “Nuevo empleado” (ya existen en esas listas).
+   - “Herramientas > Exportar asistencias” exporta sin contexto de filtros de la pantalla actual (riesgo de CSV incompleto).
+   - Hick/Fitts: menú largo, create lejos del dato.
+   - Severidad: alta para IA; media para export.
+
+4. **Formularios hermanados desiguales**
+   - Empleado create: labels + `@error` + `invalid-feedback` + hints ([`employees/create.blade.php`](resources/views/employees/create.blade.php)).
+   - Curso create: required visual pero sin `@error` ([`academia/cursos/create.blade.php`](resources/views/academia/cursos/create.blade.php)).
+   - Ciclos: botón “Nuevo” va a ruta create, pero la index trae un **modal huérfano** no disparado.
+   - Severidad: media (errores de validación invisibles).
+
+5. **Componentes existentes no son la fuente de verdad**
+   - `x-badge` usa clases Tailwind (`text-xs`, `py-0.5`) en un proyecto Bootstrap: no es el patrón real.
+   - `x-stat-card` mezcla tokens CSS y `--bs-{color}-subtle` (teal no es token semántico del DS).
+   - `x-filter-bar` no incluye botón Filtrar ni chips; cada vista los inventa.
+   - Severidad: media (segunda convención visual).
+
+6. **Modelos**
+   - Academia ya está en `app/Models/Academia/`. RH/dispositivos/sync están planos en `app/Models/`.
+   - Las vistas no siguen el mismo mapa (p. ej. incidencias junto a academia en menú).
+   - Mover namespaces PHP es **blast radius cross-module**; lo decide `architect` + `laravel`, no un rediseño visual.
+
+---
+
+## Decisiones de diseño (implementables)
+
+### Objetivo
+
+Que un operador/admin complete listar → filtrar → ver → editar/crear con la misma jerarquía en todos los módulos, sin cambiar reglas de negocio.
+
+### Usuarios / tareas
+
+- Operador RH: checadores, empleados, huellas, asistencias, puntualidad, incidencias.
+- Admin: sync Firebird, cola, dispositivos, permisos.
+- Académico: ciclo de trabajo, grupos, alumnos, profesores, horarios, cursos, planes, kardex.
+
+### Pantallas afectadas
+
+Todas las Blade bajo [`resources/views/`](resources/views/) excepto impresión (`attendances/print`, `kardex/print`) y errores (`errors/500`), que solo heredan tokens.
+
+### Patrón de referencia (no inventar)
+
+1. Shell: [`layouts/admin.blade.php`](resources/views/layouts/admin.blade.php)
+2. Tokens: [`resources/css/app.css`](resources/css/app.css)
+3. Lista operativa densa: dispositivos + asistencias (`table-cards`, empty-state)
+4. Lista CRUD simple: extender `x-data-table` (ciclos/alumnos) hasta igualar empty/acciones/responsive de dispositivos
+5. Formulario con errores: empleados create/edit
+6. Detalle con KPI: [`devices/show.blade.php`](resources/views/devices/show.blade.php), [`academia/ciclos/show.blade.php`](resources/views/academia/ciclos/show.blade.php)
+
+### Layout / grid
+
+- Contenido: flujo vertical; KPIs en `.kpi-grid` existente; formularios `row g-3`, máximo ~720px (`col-lg-8`) si hay pocos campos, full-width si hay secciones.
+- Página lista: `[page-header acciones] → [filter-bar en card] → [kpi opcional] → [tabla] → [paginación]`.
+- Página show: `[page-header] → [kpi-grid] → [2 columnas: identidad | tablas relacionadas]`.
+- Página form: `[page-header volver] → [card secciones] → [footer sticky de acciones en móvil]`.
+- **Asimetría intencional:** dashboards (panel y academia) conservan KPIs + gráfica; CRUDs de catálogo no inventan KPIs decorativos.
+
+### Espaciado
+
+Escala ya documentada: 4–48. Ritmo de página: `mb-4` entre bloques mayores, `g-3` en filtros/forms, `p-0` en cards de tabla, footer de tabla con el patrón `.data-table-footer` de `x-data-table`.
+
+### Tipografía
+
+Respetar escala del DS: page title 23/800 (solo en topbar), section 16/700, body 14, small 12. Métricas en JetBrains Mono (`.mono` / `.num-cell`). Quitar `h1` duplicados en content.
+
+### Color semántico
+
+Usar solo roles de [`app.css`](resources/css/app.css): primary naranja para CTA; success/warning/error/info/in-progress para estado; `cat-*` solo como acento de categoría (no como “otro primary”). No introducir teal Bootstrap como identidad.
+
+### Componentes / variantes a extender (no duplicar)
+
+Nuevos (mínimos, justificados):
+
+- `x-page-header`: `subtitle`, slot `actions` (primary / outline / danger), sin segundo `h1` si el layout ya muestra el título.
+- Endurecer `x-filter-bar`: slot + submit “Filtrar” + `clearUrl` + slot `chips`.
+- Endurecer `x-data-table`: empty via `partials/empty-state` (título, desc, CTA); `table-cards` + `data-label`; acciones Ver / Editar / Destruir con confirmación existente (`data-confirm`); no `table-bordered` por defecto (rompe el look de dispositivos).
+- `x-badge`: reescribir a clases del DS (`badge--status`, `badge-with-dot`, `cat-*`), eliminar utilidad Tailwind muerta.
+
+Reutilizar: `x-stat-card`, `x-drawer`, `x-academia.ciclo-selector`, toasts/alerts del layout.
+
+### Estados (toda pantalla interactiva)
+
+- Default / hover / focus-visible (ya en CSS global).
+- Loading: tablas AJAX (empleados, device show) con placeholder o spinner existente; botones submit `disabled` + texto “Guardando…”.
+- Empty: título + causa + CTA (crear, cambiar ciclo, limpiar filtros).
+- Sin resultados de filtro: distinto del empty inicial (“Ningún empleado coincide” + Limpiar).
+- Error validación: `is-invalid` + `invalid-feedback` junto al campo; resumen opcional arriba si hay >3 errores.
+- Destructive: reutilizar `data-confirm` del layout (dispositivos), no `confirm()` nativo suelto.
+- Disabled: sync/acciones admin ocultas o disabled según `isAdmin()` (comportamiento actual).
+
+### Responsive (por tipo de bloque, no “hacer más chico”)
+
+- Nav: overlay actual del sidebar; no añadir un segundo menú.
+- Filtros: `col-12` en &lt;768; Filtrar y Limpiar a ancho completo; chips wrap.
+- Tablas: `table-cards` (prioridad: identidad + estado visibles; resto en collapse/`data-label`); no scroll horizontal de página.
+- KPI: grid existente a 1 columna.
+- Modales: `modal-dialog-centered` + `modal-fullscreen-sm-down` para formularios largos.
+- Acciones de fila: iconos con `title` + `aria-label`; target ≥ 32px (btn-sm group).
+- Breakpoints de contenido: 768 (filtros/tablas), 1024 (KPI 2 col), 1280 (shell sidebar expandido). No añadir 360/390 salvo ajustes de padding del auth.
+
+### Accesibilidad (WCAG 2.2 AA)
+
+- Un `h1` por página (el del topbar).
+- Labels `for`/`id` en todos los filtros (empleados ya; copiar).
+- Foco visible (token `--primary`).
+- Estado no solo por color (texto Activo/Inactivo + badge).
+- `aria-label` en icon-only; toasts `aria-live` ya en layout.
+- Orden de tab: búsqueda global no debe robar el primer tab de la página de trabajo.
+
+### Microcopy
+
+- Empty: “No hay {entidad} en este ciclo” vs “Aún no hay {entidad} registradas”.
+- Filtros: “Limpiar filtros”, chips “Activos:”.
+- Destructivo: mensaje específico (“Se eliminará el área X y sus vínculos de puesto…”), no genérico.
+- Exportar: mover a la pantalla de Asistencias como acción secundaria (“Exportar CSV de esta consulta”).
+
+### Arquitectura de información (sidebar)
+
+Grupos propuestos (mismos destinos, otro agrupado):
+
+- **Operación:** Panel, Dispositivos, Empleados, Huellas, Asistencias, Puntualidad, Incidencias.
+- **Academia:** Dashboard académico, Ciclos, Grupos, Alumnos, Profesores, Horarios, Cursos, Planes. (Kardex se entra desde alumno; no hace falta ítem extra si ya está cubierto.)
+- **Catálogos RH:** Áreas, Puestos.
+- **Administración** (`isAdmin`): Grupos de permisos, Permisos, Cola, Firebird, Notificaciones (o Notificaciones para todos como ahora).
+- Quitar del nav: “Registrar dispositivo”, “Nuevo empleado”, “Exportar asistencias” (quedan en page-header de su módulo).
+
+Asimetría: Firebird y Cola no se “igualan” a un CRUD de catálogo; son pantallas operativas densas.
+
+Breadcrumb: `Módulo › Pantalla › Recurso` vía sección Blade.
+
+---
+
+## Oleadas de implementación (`frontend` + `laravel` mínimo)
+
+**Oleada 0 — Sistema (pocos archivos, alto apalancamiento)**  
+[`app.css`](resources/css/app.css) solo si hace falta alinear `x-stat-card` a tokens. Componentes: `page-header`, filter-bar, data-table, badge, empty-state. Layout: no duplicar h1; breadcrumb section; quitar acciones duplicadas del nav.
+
+**Oleada 1 — Listas CRUD simétricas**  
+áreas, puestos, incidencias, permission-groups, permissions, cursos, planes, ciclos (arreglar modal huérfano: o se usa el header para abrir modal, o se borra el modal y se deja `create`). Migrar a `x-page-header` + `x-data-table` + empty con CTA.
+
+**Oleada 2 — Listas operativas**  
+dispositivos, empleados, asistencias, puntualidad, huellas, cola, firebird (solo chrome/filtros, no lógica de sync). Conservar `table-cards` y JS existente; unificar header/filtros/empty.
+
+**Oleada 3 — Show / forms / academia densa**  
+show de device, empleado, grupo, alumno, profesor, ciclo, curso, plan. Forms: `@error` + `old()` + agrupación. Horarios/asistencia/kardex: mismo page-header y KPI; no forzar data-table si la grilla semanal es el patrón correcto (asimetría documentada).
+
+**Oleada 4 — Modelos (escalar a architect)**  
+Inventario y mapa vista↔modelo. Propuesta de namespaces **sin migraciones**:
+
+- `App\Models\Rh\` (o `Catalog`): Area, Puesto, Incidencia, Employee, Permission*
+- `App\Models\Device\` o `Biometric`: Device, Fingerprint, Attendance, DeviceSync*
+- `App\Models\Sync`: FirebirdSync*
+- Dejar `Academia\` y `User` como están.
+
+Compatibilidad: aliases `class_alias` o reexports temporales **solo si architect lo aprueba**. Actualizar `use` en controllers/services/tests en el mismo cambio. **No** es trabajo de diseño visual; `design` solo exige que carpetas de vistas (`employees`, `areas`, `academia/...`) reflejen esos dominios (ya lo hacen en su mayoría).
+
+Login/welcome: solo tokens y estados error/loading; no rediseñar auth.
+
+---
+
+## Impacto (change-impact)
+
+- **Target:** componentes Blade compartidos + layout nav + ~80 vistas; opcional namespaces de modelos.
+- **Consumidores:** todas las rutas web autenticadas; tests Feature que asserten HTML/menú.
+- **Blast radius:** oleadas 0–3 = `cross-module` de presentación; oleada 4 = `cross-module` PHP.
+- **Compatibilidad:** no cambiar nombres de rutas ni contracts de controllers en oleadas UI. Si `x-data-table` cambia defaults (`bordered` false, empty slot), actualizar las 4 vistas que ya lo usan.
+- **Riesgo:** mover “Exportar” puede romper un hábito; dejar enlace en Asistencias bien visible. Quitar creates del sidebar: las listas deben mostrar CTA primary.
+- **Verificación:** tests de smoke por índice (200 + texto de empty/CTA); no suite completa salvo oleada 4.
+
+---
+
+## Acceptance criteria
+
+- Un solo `h1` visible; breadcrumb refleja módulo real.
+- Toda lista tiene empty con explicación y acción; filtros con labels y Limpiar.
+- Acciones primarias naranja, destructivas rojo + confirmación del layout.
+- CRUDs análogos (áreas/puestos/incidencias/planes/cursos) comparten la misma composición de componentes.
+- Sidebar agrupado como IA anterior; creates solo junto al listado.
+- Light y dark: superficies y bordes de tokens, no colores Bootstrap crudos en badges nuevos.
+- Tablas usables a 768px via `table-cards` o collapse de `x-data-table`.
+- Forms de create/edit muestran errores de validación junto al campo.
+- Oleada 4 (si se ejecuta): autoload y tests verdes; ningún modelo “huérfano” de su dominio.
+
+## Desviaciones y riesgos
+
+- Dashboards y Firebird/horarios **no** se aplanan a CRUD.
+- `x-data-table` con `render` HTML (ciclos) es deuda de XSS; frontend debe preferir slots Blade, no `{!! !!}` nuevo.
+- Tarea actual `TASK-2026-0911` (ciclos vacíos, ciclo header, employees) se solapa con oleadas 1–2: **terminar o fusionar boundary** antes de tocar los mismos archivos.
+- Organización Eloquent puede esperar: el usuario la pidió, pero el mayor ROI UX es oleadas 0–3.
+
+## Quién implementa qué
+
+| Rol | Hace |
+|---|---|
+| `frontend` | Componentes, layout chrome, vistas Blade, CSS puntual, JS de tablas ya extraído |
+| `laravel` | Pasar variables de empty/filtros si faltan; no lógica de sync |
+| `architect` | Aprobar namespaces de modelos y Task Boundary oleada 4 |
+| `tester` | Nivel 2 por oleada; nivel 3 si se mueven modelos |
+| `security` | Confirmaciones destructivas, `{!! !!}` en data-table, exposición menú admin |
+| `docs` | Solo si cambia IA del menú de forma permanente |
+
+`design` no edita código. Este plan es el entregable para ejecutar tras aprobación humana.

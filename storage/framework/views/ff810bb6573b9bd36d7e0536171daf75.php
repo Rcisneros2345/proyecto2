@@ -1,0 +1,77 @@
+
+
+<?php $__env->startSection('title', 'Editar permiso'); ?>
+<?php $__env->startSection('breadcrumb', 'Administración › Permisos › Editar'); ?>
+
+<?php $__env->startSection('content'); ?>
+<?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Editar permiso','subtitle' => 'Actualiza la configuración del permiso.','hideTitle' => false]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('page-header'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Editar permiso','subtitle' => 'Actualiza la configuración del permiso.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
+    <?php $__env->slot('actions'); ?>
+        <a href="<?php echo e(route('permissions.index')); ?>" class="btn btn-outline-secondary">Volver</a>
+    <?php $__env->endSlot(); ?>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $attributes = $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e)): ?>
+<?php $component = $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e; ?>
+<?php unset($__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e); ?>
+<?php endif; ?>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form action="<?php echo e(route('permissions.update', $permission)); ?>" method="POST">
+            <?php echo csrf_field(); ?>
+            <?php echo method_field('PUT'); ?>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="module_id" class="form-label">Módulo</label>
+                    <select id="module_id" name="module_id" class="form-select" required>
+                        <option value="">Selecciona un módulo</option>
+                        <?php $__currentLoopData = $modules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $module): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($module->id); ?>" <?php echo e(old('module_id', $permission->module_id) == $module->id ? 'selected' : ''); ?>>
+                                <?php echo e($module->name); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="action" class="form-label">Acción</label>
+                    <input type="text" id="action" name="action" class="form-control" value="<?php echo e(old('action', $permission->action)); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="slug" class="form-label">Slug</label>
+                    <input type="text" id="slug" name="slug" class="form-control" value="<?php echo e(old('slug', $permission->slug)); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="name" class="form-label">Nombre</label>
+                    <input type="text" id="name" name="name" class="form-control" value="<?php echo e(old('name', $permission->name)); ?>" required>
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">Descripción</label>
+                    <textarea id="description" name="description" class="form-control" rows="3"><?php echo e(old('description', $permission->description)); ?></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="<?php echo e(route('permissions.index')); ?>" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\proyecto2\resources\views\permissions\edit.blade.php ENDPATH**/ ?>

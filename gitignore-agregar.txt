@@ -1,0 +1,9 @@
+# ─── Agregar a tu .gitignore ───────────────────────────────
+.ai/baseline/
+.ui-work/_cuarentena/
+routes_output.txt
+.route-current.json
+
+# Lo que SÍ se versiona:
+#   AGENTS.md · opencode.json · .opencode/agents/ · .opencode/commands/
+#   .ai/guidelines/ · scripts/ · docs/ · .ui-work/*.md y sus subcarpetas de trabajo

@@ -1,0 +1,389 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Jobs\VerifyDeviceConnectionJob;
+use App\Models\Attendance;
+use App\Models\Device;
+use App\Models\DeviceSync;
+use App\Models\Employee;
+use App\Models\Fingerprint;
+use App\Services\ZktecoService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
+
+class DeviceController extends Controller
+{
+    public function index(): View
+    {
+        $devices = Device::withCount(['employees', 'attendances'])
+            ->orderBy('name')
+            ->paginate((int) request()->query('per_page', 10));
+
+        // Serie semanal [d-6 … hoy]. El conteo se hace en PHP sobre los timestamps
+        // de la ventana porque DATE_SUB/CURDATE() es exclusivo de MySQL y rompía
+        // los tests que corren sobre SQLite.
+        $oldest = now()->subDays(6)->startOfDay()->format('Y-m-d H:i:s');
+        $weeklyTables = ['devices' => 'created_at', 'employees' => 'created_at', 'attendances' => 'recorded_at'];
+        $spark = [];
+        foreach ($weeklyTables as $table => $column) {
+            $spark[$table] = self::weeklyBuckets(
+                DB::table($table)
+                    ->whereNotNull($column)
+                    ->where($column, '>=', $oldest)
+                    ->pluck($column)
+            );
+        }
+
+        return view('devices.index', [
+            'devices' => $devices,
+            'stats' => [
+                'devices' => Device::count(),
+                'online' => Device::where('status', 'online')->count(),
+                'employees' => Employee::count(),
+                'attendances' => Attendance::count(),
+                'fingerprints' => Fingerprint::count(),
+            ],
+            'spark' => $spark,
+        ]);
+    }
+
+    public function create(): View
+    {
+        return view('devices.create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'ip' => ['required', 'ip'],
+            'port' => ['required', 'integer', 'between:1,65535'],
+            'password' => ['nullable', 'string', 'max:8'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'serial_number' => ['nullable', 'string', 'max:50', 'unique:devices,serial_number'],
+        ]);
+
+        // Create device with unknown status - connection will be verified async
+        $device = Device::create(array_merge($data, [
+            'status' => 'unknown',
+        ]));
+
+        // Dispatch async job to verify connection and fetch device info
+        VerifyDeviceConnectionJob::dispatch($device);
+
+        return Redirect::route('devices.index')
+            ->with('success', "Dispositivo {$device->name} creado. Verificando conexión en segundo plano...");
+    }
+
+    public function show(Device $device): View
+    {
+        $device->loadCount(['employees', 'attendances', 'fingerprints']);
+        $device->load('latestSync');
+        // La vista trabaja con la BD; consultar el checador aquí bloqueaba el
+        // render hasta 60 segundos cuando el equipo estaba apagado. La red se
+        // usa únicamente en acciones explícitas o jobs de sincronización.
+        $info = [
+            'device_name' => $device->device_name,
+            'serial' => $device->serial_number,
+            'vendor' => 'Datos locales',
+            'version' => 'Verificar bajo demanda',
+            'time' => 'No consultada',
+        ];
+
+        return view('devices.show', [
+            'device' => $device,
+            'info' => $info,
+            'employees' => $device->employees()->orderBy('name')->get(),
+            'attendances' => $device->attendances()->with('employee')->latest('recorded_at')->limit(15)->get(),
+            'recentSyncs' => $device->syncs()->latest()->limit(4)->get(),
+            'fingerprints' => Fingerprint::query()
+                ->where('device_id', $device->id)
+                ->with('employee:id,user_id,name')
+                ->latest()
+                ->limit(50)
+                ->get(),
+            'spark' => $this->deviceSpark($device),
+        ]);
+    }
+
+    /**
+     * Serie semanal [d-6 … hoy] de altas por tabla, acotada al dispositivo.
+     * Misma semántica y bucketing portable que la usada en index().
+     */
+    private function deviceSpark(Device $device): array
+    {
+        return [
+            // Altas de enrolamientos: la fecha relevante es la de la pivote.
+            'employees' => self::weeklyBuckets(
+                DB::table('device_employee')->where('device_id', $device->id)->pluck('created_at')
+            ),
+            'attendances' => self::weeklyBuckets($device->attendances()->pluck('recorded_at')),
+            'fingerprints' => self::weeklyBuckets(
+                Fingerprint::query()->where('device_id', $device->id)->pluck('created_at')
+            ),
+        ];
+    }
+
+    /**
+     * Convierte una colección de timestamps en 7 buckets acumulativos
+     * [d-6 … hoy], replicando la semántica de los antiguos SUM(CASE …) de MySQL
+     * pero sin SQL específico de un motor (comparación lexicográfica de
+     * 'Y-m-d H:i:s', válida en MySQL, SQLite y PostgreSQL).
+     *
+     * @param  \Illuminate\Support\Collection<int, string|null>  $timestamps
+     * @return list<int>
+     */
+    private static function weeklyBuckets(\Illuminate\Support\Collection $timestamps): array
+    {
+        $thresholds = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $thresholds[] = now()->subDays($i)->startOfDay()->format('Y-m-d H:i:s');
+        }
+
+        return array_map(
+            fn (string $since): int => $timestamps->filter(
+                fn (?string $ts): bool => $ts !== null && $ts >= $since
+            )->count(),
+            $thresholds
+        );
+    }
+
+    /**
+     * Devuelve los contadores, la tabla de empleados y las asistencias recientes
+     * actualizados. Se usa tras completar una sincronización para refrescar la
+     * vista sin recargar la página completa.
+     */
+    public function refreshData(Device $device): JsonResponse
+    {
+        $device->loadCount(['employees', 'attendances', 'fingerprints']);
+
+        $employees = $device->employees()->orderBy('name')->get();
+        $attendances = $device->attendances()->with('employee')->latest('recorded_at')->limit(15)->get();
+
+        return response()->json([
+            'counts' => [
+                'employees' => $device->employees_count,
+                'attendances' => $device->attendances_count,
+                'fingerprints' => $device->fingerprints_count,
+                'status' => $device->status,
+                'status_label' => Device::states()[$device->status] ?? $device->status,
+            ],
+            // Las claves del payload se conservan idénticas (uid/card_no/role…)
+            // para no romper el JS de la vista; los valores ahora provienen de
+            // la pivote del enrolamiento con este dispositivo.
+            'employees' => $employees->map(fn (Employee $employee): array => [
+                'id' => $employee->id,
+                'user_id' => $employee->user_id,
+                'uid' => $employee->pivot->device_uid,
+                'name' => $employee->name,
+                'role' => $employee->pivot->role,
+                'role_label' => $employee->pivot->roleLabel(),
+                'card_no' => $employee->pivot->card_number,
+                'fingerprints_count' => $employee->pivot->fingerprint_count,
+                'edit_url' => route('employees.edit', $employee),
+                'upload_url' => route('devices.employees.upload-fingerprints', [$device, $employee]),
+                'destroy_url' => route('devices.employees.remove', [$device, $employee]),
+                'sync_fingerprint_url' => route('devices.sync-fingerprints', $device),
+            ])->values(),
+            'attendances' => $attendances->map(fn (Attendance $attendance): array => [
+                'recorded_at' => $attendance->recorded_at->format('d/m/Y H:i:s'),
+                'employee_name' => $attendance->employee?->name ?? 'Sin asignar',
+                'user_id' => $attendance->user_id,
+                'state' => $attendance->state,
+                'state_label' => $attendance->shortStateLabel(),
+                'state_color' => $attendance->stateColorClass(),
+            ])->values(),
+            'recent_syncs' => $device->syncs()->latest()->limit(4)->get()->map(fn (DeviceSync $sync): array => [
+                'operation_label' => $sync->operation_label,
+                'status' => $sync->status,
+                'stage' => $sync->stage,
+                'created' => $sync->created_count,
+                'updated' => $sync->updated_count,
+                'error' => $sync->error_message,
+                'finished_at' => $sync->finished_at?->format('d/m/Y H:i'),
+            ])->values(),
+            'fingerprints' => Fingerprint::query()
+                ->where('device_id', $device->id)
+                ->with('employee:id,user_id,name')
+                ->latest()
+                ->limit(50)
+                ->get()
+                ->map(fn (Fingerprint $fingerprint): array => [
+                    'user_id' => $fingerprint->employee?->user_id,
+                    'employee_name' => $fingerprint->employee?->name ?? 'Sin asignar',
+                    'finger' => $fingerprint->finger,
+                    'registered_at' => $fingerprint->created_at?->format('d/m/Y H:i'),
+                ])->values(),
+        ]);
+    }
+
+    public function progress(Device $device): JsonResponse
+    {
+        $sync = $device->syncs()->latest()->first();
+
+        return response()->json([
+            'status' => $sync?->status ?? 'never',
+            'operation' => $sync?->operation,
+            'stage' => $sync?->stage,
+            'processed' => $sync?->processed ?? 0,
+            'total' => $sync?->total ?? 0,
+            'created' => $sync?->created_count ?? 0,
+            'updated' => $sync?->updated_count ?? 0,
+            'error' => $sync?->error_message,
+        ]);
+    }
+
+    public function syncStatus(Device $device): JsonResponse
+    {
+        $sync = $device->syncs()->latest()->first();
+
+        return response()->json([
+            'status' => $sync?->status ?? 'never',
+            'operation' => $sync?->operation,
+            'stage' => $sync?->stage,
+            'processed' => $sync?->processed ?? 0,
+            'total' => $sync?->total ?? 0,
+            'created' => $sync?->created_count ?? 0,
+            'updated' => $sync?->updated_count ?? 0,
+            'finished_at' => $sync?->finished_at?->toIso8601String(),
+            'error' => $sync?->error_message,
+        ]);
+    }
+
+    public function edit(Device $device): View
+    {
+        return view('devices.edit', ['device' => $device]);
+    }
+
+    public function update(Request $request, Device $device): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'ip' => ['required', 'ip'],
+            'port' => ['required', 'integer', 'between:1,65535'],
+            'password' => ['nullable', 'string', 'max:8'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'serial_number' => ['nullable', 'string', 'max:50', 'unique:devices,serial_number,'.$device->id],
+        ]);
+
+        $device->update($data);
+
+        $service = new ZktecoService($device);
+        $service->deviceStatus();
+
+        return Redirect::route('devices.show', $device)
+            ->with('success', 'Dispositivo actualizado.');
+    }
+
+    public function destroy(Device $device): RedirectResponse
+    {
+        $device->delete();
+
+        return Redirect::route('devices.index')
+            ->with('success', "Dispositivo {$device->name} eliminado.");
+    }
+
+    public function deduplicate(): RedirectResponse
+    {
+        [$employeesDeleted, $attendancesDeleted] = DB::transaction(function (): array {
+            // Usar window functions (ROW_NUMBER) para evitar error 1055 ONLY_FULL_GROUP_BY en MySQL 8+
+            // Empleados: mantener el de menor id por user_id
+            $employeesDeleted = DB::delete(
+                'DELETE e FROM `employees` e
+                JOIN (
+                    SELECT `id`, ROW_NUMBER() OVER (PARTITION BY `user_id` ORDER BY `id`) AS rn
+                    FROM `employees`
+                ) t ON e.`id` = t.`id`
+                WHERE t.rn > 1'
+            );
+
+            // Re-asignar asistencias y huellas de empleados eliminados antes de borrar
+            // (Los employees ya borrados arriba no afectan esta query porque usamos id directo)
+            // Nota: en MySQL 8+ la subquery en DELETE no permite referenciar la misma tabla
+            // así que hacemos update previo y luego delete
+
+            // Asistencias: mantener la de menor id por (device_id, user_id, recorded_at, state)
+            $attendancesDeleted = DB::delete(
+                'DELETE a FROM `attendances` a
+                JOIN (
+                    SELECT `id`, ROW_NUMBER() OVER (
+                        PARTITION BY `device_id`, `user_id`, `recorded_at`, `state`
+                        ORDER BY `id`
+                    ) AS rn
+                    FROM `attendances`
+                ) t ON a.`id` = t.`id`
+                WHERE t.rn > 1'
+            );
+
+            // Huellas: mantener la de menor id por (device_id, employee_id, finger)
+            $fingerprintsDeleted = DB::delete(
+                'DELETE f FROM `fingerprints` f
+                JOIN (
+                    SELECT `id`, ROW_NUMBER() OVER (
+                        PARTITION BY `device_id`, `employee_id`, `finger`
+                        ORDER BY `id`
+                    ) AS rn
+                    FROM `fingerprints`
+                ) t ON f.`id` = t.`id`
+                WHERE t.rn > 1'
+            );
+
+            return [$employeesDeleted, $attendancesDeleted + $fingerprintsDeleted];
+        });
+
+        return Redirect::route('devices.index')->with(
+            'success',
+            "Limpieza completada: {$employeesDeleted} empleados y {$attendancesDeleted} registros duplicados eliminados."
+        );
+    }
+
+    public function checkStatus(Device $device): JsonResponse|RedirectResponse
+    {
+        $service = new ZktecoService($device);
+        $status = $service->deviceStatus();
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'status' => Device::states()[$status],
+                'message' => "{$device->name}: ".Device::states()[$status],
+            ]);
+        }
+
+        return Redirect::route('devices.index')
+            ->with('success', "{$device->name}: ".Device::states()[$status]);
+    }
+
+    public function syncNow(Device $device): JsonResponse|RedirectResponse
+    {
+        $service = new ZktecoService($device);
+
+        if ($ok = $service->setTime(now()->format('Y-m-d H:i:s'))) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'status' => 'completed',
+                    'message' => 'La hora del equipo fue sincronizada con la del servidor.',
+                ]);
+            }
+
+            return Redirect::route('devices.show', $device)
+                ->with('success', 'La hora del equipo fue sincronizada con la del servidor.');
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No se pudo sincronizar la hora del dispositivo.',
+            ]);
+        }
+
+        return Redirect::route('devices.show', $device)
+            ->with('error', 'No se pudo sincronizar la hora del equipo.');
+    }
+}

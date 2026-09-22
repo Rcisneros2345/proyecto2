@@ -1,0 +1,8 @@
+resources/views/components/academia/ciclo-selector.blade.php
+resources/views/components/badge.blade.php
+resources/views/components/data-table.blade.php
+resources/views/components/drawer.blade.php
+resources/views/components/filter-bar.blade.php
+resources/views/components/navigation-menu.blade.php
+resources/views/components/page-header.blade.php
+resources/views/components/stat-card.blade.php

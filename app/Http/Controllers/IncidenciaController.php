@@ -31,7 +31,7 @@ class IncidenciaController extends Controller
                 $employeeIds = $user->employeeAssignments()->pluck('employees.id');
                 $professorKeys = $user->professorAssignments()->pluck('profesores.clave_profesor');
 
-                $query->where(function ($visibleQuery) use ($employeeIds, $professorKeys): void {
+                $query->where(function ($visibleQuery) use ($employeeIds, $professorKeys, $user): void {
                     $visibleQuery
                         ->whereIn('empleado_id', $employeeIds)
                         ->orWhereIn('profesor_clave', $professorKeys)

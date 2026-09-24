@@ -6,7 +6,7 @@
 @section('content')
 <x-page-header title="Dispositivos" subtitle="Supervisa la red biométrica y sus registros desde un solo lugar." :hide-title="false">
     @slot('actions')
-        @if (auth()->user()->isAdmin())
+        @if (auth()->user()->canAccessModule('dispositivos', 'sync'))
             <form action="{{ route('devices.deduplicate') }}" method="POST"
                   data-confirm
                   data-confirm-danger
@@ -18,6 +18,8 @@
                     <i class="bi bi-funnel me-1"></i> Limpiar duplicados
                 </button>
             </form>
+        @endif
+        @if (auth()->user()->canAccessModule('dispositivos', 'create'))
             <a href="{{ route('devices.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Registrar dispositivo
             </a>
@@ -123,14 +125,18 @@
                                     <a href="{{ route('devices.show', $device) }}" class="btn btn-sm btn-ghost" title="Ver detalle de {{ $device->name }}" aria-label="Ver detalle de {{ $device->name }}">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @if (auth()->user()->isAdmin())
+                                    @if (auth()->user()->canAccessModule('dispositivos', 'sync'))
                                         <form action="{{ route('devices.sync-attendances', $device) }}" method="POST" class="d-inline" data-sync>
                                             @csrf
                                             <button class="btn btn-sm btn-ghost" title="Sincronizar asistencias de {{ $device->name }}" aria-label="Sincronizar asistencias de {{ $device->name }}"><i class="bi bi-calendar-plus"></i></button>
                                         </form>
+                                    @endif
+                                    @if (auth()->user()->canAccessModule('dispositivos', 'update'))
                                         <a href="{{ route('devices.edit', $device) }}" class="btn btn-sm btn-ghost" title="Editar {{ $device->name }}" aria-label="Editar {{ $device->name }}">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                    @endif
+                                    @if (auth()->user()->canAccessModule('dispositivos', 'delete'))
                                         <form action="{{ route('devices.destroy', $device) }}" method="POST" class="d-inline"
                                               data-confirm
                                               data-confirm-danger
@@ -152,7 +158,7 @@
                                     'icon'     => 'bi-hdd-network',
                                     'title'    => 'No hay checadores registrados aún',
                                     'desc'     => 'Los dispositivos aparecerán aquí cuando se registren en la red.',
-                                    'cta'      => auth()->user()->isAdmin()
+                                    'cta'      => auth()->user()->canAccessModule('dispositivos', 'create')
                                         ? ['label' => 'Registrar primer dispositivo', 'url' => route('devices.create')]
                                         : null,
                                     'ctaLink'  => true,

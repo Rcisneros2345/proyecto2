@@ -16,11 +16,13 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => ''.e($grupo->codigo_grupo).'','subtitle' => ''.e($grupo->grado).'° · '.e($grupo->turno_nombre).' · '.e($grupo->nivelRel?->descripcion ?? $grupo->nivel).' · '.e($grupo->modalidad_nombre).' · '.e($grupo->inscritos).' inscritos · '.e($grupo->sede?->descripcion).'','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
-        <div class="btn-group btn-group-sm">
-            <a href="<?php echo e(route('academia.grupos.asistencia', $grupo)); ?>" class="btn btn-success">
-                <i class="bi bi-check-circle me-1"></i> Asistencia
-            </a>
-        </div>
+        <?php if(auth()->user()->canAccessModule('academia.grupos', 'asistencia')): ?>
+            <div class="btn-group btn-group-sm">
+                <a href="<?php echo e(route('academia.grupos.asistencia', $grupo)); ?>" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i> Asistencia
+                </a>
+            </div>
+        <?php endif; ?>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>

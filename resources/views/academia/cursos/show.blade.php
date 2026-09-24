@@ -6,11 +6,13 @@
 @section('content')
 <x-page-header title="{{ $curso->nombre_curso }}" subtitle="{{ $curso->clave_curso }} | {{ $curso->nombre_curso }} · {{ $curso->nivelRel?->descripcion ?? $curso->plan?->nivelRel?->descripcion ?? $curso->nivel ?? 'Nivel no asignado' }} · {{ $curso->turno_nombre }} · {{ $curso->sede?->descripcion ?? $curso->id_campus }} · {{ $alumnos->count() }} alumnos" :hide-title="false">
     @slot('actions')
-        <div class="btn-group btn-group-sm">
-            <a href="{{ route('academia.cursos.edit', $curso) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
-        </div>
+        @if (auth()->user()->canAccessModule('academia.cursos', 'update'))
+            <div class="btn-group btn-group-sm">
+                <a href="{{ route('academia.cursos.edit', $curso) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            </div>
+        @endif
     @endslot
 </x-page-header>
 
@@ -19,7 +21,7 @@
     <x-stat-card :icon="'bi-book'" :label="'Materia'" :value="$materia?->nombre_asignatura ?? 'No asignada'" :color="'blue'">
         <div class="kpi-trend flat">–</div>
     </x-stat-card>
-    <x-stat-card :icon="'bi-person-badge'" :label="'Maestros'" :value="$docentes->count()" :color="'green'">
+    <x-stat-card :icon="'bi-person-badge'" :label="'Maestros'" :value="count($docentes)" :color="'green'">
         <div class="kpi-trend flat">–</div>
     </x-stat-card>
     <x-stat-card :icon="'bi-clock'" :label="'Horas Teoría'" :value="$curso->materias->sum('horas_teoria')" :color="'purple'">
@@ -98,7 +100,7 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        @if ($m?->id)
+                                        @if ($m?->id && auth()->user()->canAccessModule('academia.cursos', 'materia'))
                                         <button type="button" class="btn btn-outline-danger" onclick="eliminarMateria({{ $m->id }})" title="Quitar">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -121,6 +123,30 @@
         @empty
             <span class="text-muted">No hay maestro asignado en los horarios de esta materia.</span>
         @endforelse
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header fw-bold">Horario propio del curso</div>
+    <div class="card-body">
+        @if ($curso->desde || $curso->hasta || $curso->sesiones)
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Vigencia</span>
+                    {{ $curso->desde?->format('d/m/Y') ?? 'Sin inicio' }} al {{ $curso->hasta?->format('d/m/Y') ?? 'Sin fin' }}
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Sesiones</span>
+                    {{ $curso->sesiones ?? 0 }}
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Turno</span>
+                    {{ $curso->turno_nombre }}
+                </div>
+            </div>
+        @else
+            <span class="text-muted">Este curso no tiene horario propio registrado.</span>
+        @endif
     </div>
 </div>
 
@@ -182,6 +208,7 @@
 </div>
 
 {{-- Modal Agregar Materia --}}
+@if (auth()->user()->canAccessModule('academia.cursos', 'materia'))
 <div class="modal fade" id="modalAgregarMateria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -231,9 +258,11 @@
         </div>
     </div>
 </div>
+@endif
 
 <script>
-document.getElementById('formAgregarMateria').addEventListener('submit', function(e) {
+const materiaForm = document.getElementById('formAgregarMateria');
+if (materiaForm) materiaForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     fetch('/academia/cursos/{{ $curso->id }}/materia', {

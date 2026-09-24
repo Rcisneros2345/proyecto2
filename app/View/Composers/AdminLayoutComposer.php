@@ -36,6 +36,10 @@ class AdminLayoutComposer
         $user = Auth::user();
         $items = $this->databaseNotifications();
 
+        if (! $user->isAdmin()) {
+            return $items;
+        }
+
         $devices = Device::count();
         $offline = Device::where('status', 'offline')->count();
         $unassigned = Attendance::whereNull('employee_id')->count();
@@ -247,11 +251,17 @@ class AdminLayoutComposer
             })->values();
 
         $pages = [
-            ['label' => 'Panel de control', 'keywords' => 'inicio dashboard resumen', 'url' => route('dashboard'), 'icon' => 'bi-speedometer2'],
             ['label' => 'Dispositivos', 'keywords' => 'checadores red biometrica', 'url' => route('devices.index'), 'icon' => 'bi-hdd-network'],
             ['label' => 'Empleados', 'keywords' => 'personas usuarios', 'url' => route('employees.index'), 'icon' => 'bi-people'],
-            ['label' => 'Asistencias', 'keywords' => 'checadas registros marcado', 'url' => route('attendances.index'), 'icon' => 'bi-calendar-check'],
         ];
+
+        if ($this->canAccess('dashboard', 'view')) {
+            array_unshift($pages, ['label' => 'Panel de control', 'keywords' => 'inicio dashboard resumen', 'url' => route('dashboard'), 'icon' => 'bi-speedometer2']);
+        }
+
+        if ($this->canAccess('asistencias', 'view')) {
+            $pages[] = ['label' => 'Asistencias', 'keywords' => 'checadas registros marcado', 'url' => route('attendances.index'), 'icon' => 'bi-calendar-check'];
+        }
 
         if ($isAdmin) {
             array_push($pages,
@@ -259,16 +269,26 @@ class AdminLayoutComposer
                 ['label' => 'Nuevo empleado', 'keywords' => 'agregar persona', 'url' => route('employees.create'), 'icon' => 'bi-person-plus']
             );
         }
-        array_push($pages,
-            ['label' => 'Exportar asistencias (CSV)', 'keywords' => 'descargar excel reporte', 'url' => route('attendances.export'), 'icon' => 'bi-file-earmark-spreadsheet'],
-            ['label' => 'Imprimir reporte', 'keywords' => 'pdf imprimir', 'url' => route('attendances.print'), 'icon' => 'bi-printer']
-        );
+        if ($this->canAccess('asistencias', 'export')) {
+            $pages[] = ['label' => 'Exportar asistencias (CSV)', 'keywords' => 'descargar excel reporte', 'url' => route('attendances.export'), 'icon' => 'bi-file-earmark-spreadsheet'];
+        }
+        if ($this->canAccess('asistencias', 'print')) {
+            $pages[] = ['label' => 'Imprimir reporte', 'keywords' => 'pdf imprimir', 'url' => route('attendances.print'), 'icon' => 'bi-printer'];
+        }
 
         return [
             'pages' => $pages,
             'devices' => $devices,
             'employees' => $employees,
         ];
+    }
+
+    private function canAccess(string $module, string $action): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return $user->isAdmin() || $user->hasModulePermission($module, $action);
     }
 
     private function alerts(): array

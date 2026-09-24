@@ -14,15 +14,19 @@
 <?php $component->withAttributes(['title' => ''.e($ciclo->label).'','subtitle' => ''.e($ciclo->descripcion).'','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
         <div class="btn-group btn-group-sm">
-            <a href="<?php echo e(route('academia.ciclos.edit', $ciclo)); ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
-            <button class="btn btn-outline-<?php echo e($ciclo->activo ? 'warning' : 'success'); ?>"
-                    onclick="toggleCicloActivo('<?php echo e($ciclo->id); ?>', <?php echo e($ciclo->activo ? 'false' : 'true'); ?>)">
-                <i class="bi bi-<?php echo e($ciclo->activo ? 'pause' : 'play'); ?> me-1"></i>
-                <?php echo e($ciclo->activo ? 'Desactivar' : 'Activar'); ?>
+            <?php if(auth()->user()->canAccessModule('academia.ciclos', 'update')): ?>
+                <a href="<?php echo e(route('academia.ciclos.edit', $ciclo)); ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            <?php endif; ?>
+            <?php if(auth()->user()->canAccessModule('academia.ciclos', 'activo')): ?>
+                <button class="btn btn-outline-<?php echo e($ciclo->activo ? 'warning' : 'success'); ?>"
+                        onclick="toggleCicloActivo('<?php echo e($ciclo->id); ?>', <?php echo e($ciclo->activo ? 'false' : 'true'); ?>)">
+                    <i class="bi bi-<?php echo e($ciclo->activo ? 'pause' : 'play'); ?> me-1"></i>
+                    <?php echo e($ciclo->activo ? 'Desactivar' : 'Activar'); ?>
 
-            </button>
+                </button>
+            <?php endif; ?>
         </div>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>

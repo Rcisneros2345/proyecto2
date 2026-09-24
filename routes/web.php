@@ -72,7 +72,7 @@ Route::middleware('auth')->group(function () {
                 ->parameters(['profesores' => 'profesor']);
             Route::get('profesores/{profesor}/horario', [AcademiaProfesorController::class, 'horario'])->name('profesores.horario');
             Route::post('profesores/{profesor}/usuario', [AcademiaProfesorController::class, 'assignUser'])
-                ->middleware(['admin', 'module_permission:academia.profesores,usuario'])
+                ->middleware('module_permission:academia.profesores,usuario')
                 ->name('profesores.usuario');
 
             // Horarios
@@ -166,15 +166,15 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('devices')->name('devices.')->group(function () {
         Route::get('/', [DeviceController::class, 'index'])->middleware('module_permission:dispositivos,view')->name('index');
-        Route::get('/create', [DeviceController::class, 'create'])->middleware('admin')->name('create');
-        Route::post('/', [DeviceController::class, 'store'])->middleware('admin')->name('store');
+        Route::get('/create', [DeviceController::class, 'create'])->middleware('module_permission:dispositivos,create')->name('create');
+        Route::post('/', [DeviceController::class, 'store'])->middleware('module_permission:dispositivos,create')->name('store');
         Route::get('/{device}', [DeviceController::class, 'show'])->middleware('module_permission:dispositivos,view')->name('show');
         Route::get('/{device}/sync-status', [DeviceController::class, 'syncStatus'])->middleware('module_permission:dispositivos,view')->name('sync-status');
         Route::get('/{device}/refresh-data', [DeviceController::class, 'refreshData'])->middleware('module_permission:dispositivos,view')->name('refresh-data');
         Route::get('/{device}/progress', [DeviceController::class, 'progress'])->middleware('module_permission:dispositivos,view')->name('progress');
-        Route::get('/{device}/edit', [DeviceController::class, 'edit'])->middleware('admin')->name('edit');
-        Route::put('/{device}', [DeviceController::class, 'update'])->middleware('admin')->name('update');
-        Route::delete('/{device}', [DeviceController::class, 'destroy'])->middleware('admin')->name('destroy');
+        Route::get('/{device}/edit', [DeviceController::class, 'edit'])->middleware('module_permission:dispositivos,update')->name('edit');
+        Route::put('/{device}', [DeviceController::class, 'update'])->middleware('module_permission:dispositivos,update')->name('update');
+        Route::delete('/{device}', [DeviceController::class, 'destroy'])->middleware('module_permission:dispositivos,delete')->name('destroy');
 
         Route::post('/{device}/check-status', [DeviceController::class, 'checkStatus'])->name('check-status');
         Route::middleware(['module_permission:dispositivos,sync', 'throttle:30,1'])->group(function () {
@@ -195,19 +195,19 @@ Route::middleware('auth')->group(function () {
     Route::prefix('employees')->name('employees.')->group(function () {
         Route::get('/', [EmployeeController::class, 'index'])->middleware('module_permission:empleados,view')->name('index');
         Route::get('/search', [EmployeeController::class, 'search'])->middleware('module_permission:empleados,view')->name('search');
-        Route::get('/create', [EmployeeController::class, 'create'])->middleware(['admin', 'module_permission:empleados,create'])->name('create');
-        Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])->middleware(['admin', 'module_permission:empleados,update'])->name('edit');
+        Route::get('/create', [EmployeeController::class, 'create'])->middleware('module_permission:empleados,create')->name('create');
+        Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])->middleware('module_permission:empleados,update')->name('edit');
         Route::get('/{employee}/enrollment-diff', [EmployeeController::class, 'enrollmentDiff'])->middleware('module_permission:empleados,view')->name('enrollment-diff');
         Route::get('/{employee}/sync-progress', [EmployeeController::class, 'syncProgress'])->middleware('module_permission:empleados,view')->name('sync-progress');
-        Route::middleware('admin')->group(function () {
+        Route::middleware('auth')->group(function () {
             Route::post('/', [EmployeeController::class, 'store'])->middleware(['module_permission:empleados,create', 'throttle:30,1'])->name('store');
             Route::put('/{employee}', [EmployeeController::class, 'update'])->middleware(['module_permission:empleados,update', 'throttle:30,1'])->name('update');
             Route::post('/{employee}/card', [EmployeeController::class, 'updateCard'])->middleware(['module_permission:empleados,update', 'throttle:30,1'])->name('update-card');
             Route::post('/{employee}/enroll-device', [EmployeeController::class, 'enrollOnDevice'])->middleware(['module_permission:empleados,update', 'throttle:30,1'])->name('enroll-device');
             Route::post('/{employee}/sync-devices', [EmployeeController::class, 'syncToDevices'])->middleware(['module_permission:empleados,update', 'throttle:30,1'])->name('sync-devices');
-            Route::delete('/{employee}', [EmployeeController::class, 'destroy'])->middleware(['module_permission:empleados,delete', 'admin'])->name('destroy');
-            Route::post('/{employee}/fingerprints/{fingerprint}/copy', [FingerprintController::class, 'copyFingerprint'])->name('copy-fingerprint');
-            Route::delete('/{employee}/fingerprints/{fingerprint}', [FingerprintController::class, 'deleteFingerprint'])->name('delete-fingerprint');
+            Route::delete('/{employee}', [EmployeeController::class, 'destroy'])->middleware('module_permission:empleados,delete')->name('destroy');
+            Route::post('/{employee}/fingerprints/{fingerprint}/copy', [FingerprintController::class, 'copyFingerprint'])->middleware('module_permission:empleados,enroll')->name('copy-fingerprint');
+            Route::delete('/{employee}/fingerprints/{fingerprint}', [FingerprintController::class, 'deleteFingerprint'])->middleware('module_permission:empleados,enroll')->name('delete-fingerprint');
         });
 
         // Sobrantes: device_employee sin employee válido o con employee dado de baja
@@ -234,11 +234,37 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::resource('areas', AreaController::class)
+        ->only(['index', 'show'])
         ->parameters(['areas' => 'area'])
-        ->middleware('admin');
+        ->middleware('module_permission:areas,view');
+    Route::resource('areas', AreaController::class)
+        ->only(['create', 'store'])
+        ->parameters(['areas' => 'area'])
+        ->middleware('module_permission:areas,create');
+    Route::resource('areas', AreaController::class)
+        ->only(['edit', 'update'])
+        ->parameters(['areas' => 'area'])
+        ->middleware('module_permission:areas,update');
+    Route::resource('areas', AreaController::class)
+        ->only(['destroy'])
+        ->parameters(['areas' => 'area'])
+        ->middleware('module_permission:areas,delete');
     Route::resource('puestos', PuestoController::class)
+        ->only(['index', 'show'])
         ->parameters(['puestos' => 'puesto'])
-        ->middleware('admin');
+        ->middleware('module_permission:puestos,view');
+    Route::resource('puestos', PuestoController::class)
+        ->only(['create', 'store'])
+        ->parameters(['puestos' => 'puesto'])
+        ->middleware('module_permission:puestos,create');
+    Route::resource('puestos', PuestoController::class)
+        ->only(['edit', 'update'])
+        ->parameters(['puestos' => 'puesto'])
+        ->middleware('module_permission:puestos,update');
+    Route::resource('puestos', PuestoController::class)
+        ->only(['destroy'])
+        ->parameters(['puestos' => 'puesto'])
+        ->middleware('module_permission:puestos,delete');
 
     Route::prefix('permission-groups')->name('permission-groups.')->middleware('admin')->group(function () {
         Route::get('/', [PermissionGroupController::class, 'index'])->name('index');

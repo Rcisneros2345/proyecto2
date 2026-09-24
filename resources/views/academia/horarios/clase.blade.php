@@ -20,7 +20,7 @@
                 <label class="form-label">Nivel <span class="text-danger">*</span></label>
                 <select name="nivel" class="form-select" required>
                     <option value="">-- Seleccionar --</option>
-                    @foreach (\App\Models\Academia\Nivel::activo()->get() as $n)
+                    @foreach ($niveles as $n)
                         <option value="{{ $n->nivel }}" {{ $filtros['nivel'] == $n->nivel ? 'selected' : '' }}>{{ $n->descripcion }}</option>
                     @endforeach
                 </select>
@@ -29,7 +29,7 @@
                 <label class="form-label">Turno <span class="text-danger">*</span></label>
                 <select name="turno" class="form-select" required>
                     <option value="">-- Seleccionar --</option>
-                    @foreach (\App\Models\Academia\Turno::activo()->get() as $t)
+                    @foreach ($turnos as $t)
                         <option value="{{ $t->turno }}" {{ $filtros['turno'] == $t->turno ? 'selected' : '' }}>{{ $t->descripcion }}</option>
                     @endforeach
                 </select>
@@ -37,7 +37,9 @@
             <div class="col-md-2">
                 <label class="form-label">Sede</label>
                 <select name="sede" class="form-select">
-                    <option value="">Todas</option>
+                    @if (auth()->user()->isAdmin())
+                        <option value="">Todas</option>
+                    @endif
                     @foreach ($sedes as $sede)
                         <option value="{{ $sede->id_campus }}" {{ $filtros['sede'] == $sede->id_campus ? 'selected' : '' }}>{{ $sede->descripcion }}</option>
                     @endforeach

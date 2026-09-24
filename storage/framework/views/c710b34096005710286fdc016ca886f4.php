@@ -13,7 +13,7 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Dispositivos','subtitle' => 'Supervisa la red biométrica y sus registros desde un solo lugar.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
-        <?php if(auth()->user()->isAdmin()): ?>
+        <?php if(auth()->user()->canAccessModule('dispositivos', 'sync')): ?>
             <form action="<?php echo e(route('devices.deduplicate')); ?>" method="POST"
                   data-confirm
                   data-confirm-danger
@@ -25,6 +25,8 @@
                     <i class="bi bi-funnel me-1"></i> Limpiar duplicados
                 </button>
             </form>
+        <?php endif; ?>
+        <?php if(auth()->user()->canAccessModule('dispositivos', 'create')): ?>
             <a href="<?php echo e(route('devices.create')); ?>" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Registrar dispositivo
             </a>
@@ -230,14 +232,18 @@
                                     <a href="<?php echo e(route('devices.show', $device)); ?>" class="btn btn-sm btn-ghost" title="Ver detalle de <?php echo e($device->name); ?>" aria-label="Ver detalle de <?php echo e($device->name); ?>">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <?php if(auth()->user()->isAdmin()): ?>
+                                    <?php if(auth()->user()->canAccessModule('dispositivos', 'sync')): ?>
                                         <form action="<?php echo e(route('devices.sync-attendances', $device)); ?>" method="POST" class="d-inline" data-sync>
                                             <?php echo csrf_field(); ?>
                                             <button class="btn btn-sm btn-ghost" title="Sincronizar asistencias de <?php echo e($device->name); ?>" aria-label="Sincronizar asistencias de <?php echo e($device->name); ?>"><i class="bi bi-calendar-plus"></i></button>
                                         </form>
+                                    <?php endif; ?>
+                                    <?php if(auth()->user()->canAccessModule('dispositivos', 'update')): ?>
                                         <a href="<?php echo e(route('devices.edit', $device)); ?>" class="btn btn-sm btn-ghost" title="Editar <?php echo e($device->name); ?>" aria-label="Editar <?php echo e($device->name); ?>">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                    <?php endif; ?>
+                                    <?php if(auth()->user()->canAccessModule('dispositivos', 'delete')): ?>
                                         <form action="<?php echo e(route('devices.destroy', $device)); ?>" method="POST" class="d-inline"
                                               data-confirm
                                               data-confirm-danger
@@ -259,7 +265,7 @@
                                     'icon'     => 'bi-hdd-network',
                                     'title'    => 'No hay checadores registrados aún',
                                     'desc'     => 'Los dispositivos aparecerán aquí cuando se registren en la red.',
-                                    'cta'      => auth()->user()->isAdmin()
+                                    'cta'      => auth()->user()->canAccessModule('dispositivos', 'create')
                                         ? ['label' => 'Registrar primer dispositivo', 'url' => route('devices.create')]
                                         : null,
                                     'ctaLink'  => true,

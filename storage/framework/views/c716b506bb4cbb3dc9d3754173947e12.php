@@ -116,12 +116,13 @@
                         <th>Salida</th>
                         <th>Tipo de empleado</th>
                         <th>Puesto / área</th>
+                        <th>Incidencias</th>
                         <th>Dispositivo</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php $__empty_1 = true; $__currentLoopData = $attendances; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attendance): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                        <tr>
+                        <tr class="attendance-row <?php echo e($attendance->incidencias->contains(fn ($incidencia) => $incidencia->estado === 'aprobada') ? 'attendance-row--approved' : ''); ?>">
                             <td data-label="Fecha">
                                 <span class="mono text-secondary-token" style="font-size:12px"><?php echo e(\Carbon\Carbon::parse($attendance->date)->locale('es')->isoFormat('D MMM YYYY')); ?></span>
                             </td>
@@ -172,22 +173,28 @@
                             </td>
                             <td data-label="Llegada">
                                 <?php $__empty_2 = true; $__currentLoopData = $attendance->llegada_resumen; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $punch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
-                                    <div class="small"><span class="fw-semibold"><?php echo e($punch['label']); ?>:</span> <?php echo e($punch['time']); ?></div>
+                                    <div class="attendance-punch attendance-punch--in">
+                                        <span class="attendance-punch__label"><i class="bi bi-box-arrow-in-right"></i><?php echo e($punch['label']); ?>:</span>
+                                        <strong><?php echo e($punch['time']); ?></strong>
+                                    </div>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
-                                    <span class="text-muted">Sin entrada</span>
+                                    <span class="attendance-empty">Sin entrada</span>
                                 <?php endif; ?>
-                                <div class="small mt-1 <?php echo e(str_contains($attendance->observacion_llegada, 'tarde') ? 'text-danger' : (str_contains($attendance->observacion_llegada, 'temprano') ? 'text-success' : 'text-muted')); ?>">
+                                <div class="attendance-deviation <?php echo e(str_contains($attendance->observacion_llegada, 'tarde') ? 'attendance-deviation--late' : (str_contains($attendance->observacion_llegada, 'temprano') ? 'attendance-deviation--early' : '')); ?>">
                                     <?php echo e($attendance->observacion_llegada); ?>
 
                                 </div>
                             </td>
                             <td data-label="Salida">
                                 <?php $__empty_2 = true; $__currentLoopData = $attendance->salida_resumen; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $punch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
-                                    <div class="small"><span class="fw-semibold"><?php echo e($punch['label']); ?>:</span> <?php echo e($punch['time']); ?></div>
+                                    <div class="attendance-punch attendance-punch--out">
+                                        <span class="attendance-punch__label"><i class="bi bi-box-arrow-right"></i><?php echo e($punch['label']); ?>:</span>
+                                        <strong><?php echo e($punch['time']); ?></strong>
+                                    </div>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
-                                    <span class="text-muted">Sin salida</span>
+                                    <span class="attendance-empty">Sin salida</span>
                                 <?php endif; ?>
-                                <div class="small mt-1 <?php echo e(str_contains($attendance->observacion_salida, 'temprano') ? 'text-warning' : (str_contains($attendance->observacion_salida, 'tarde') ? 'text-info' : 'text-muted')); ?>">
+                                <div class="attendance-deviation <?php echo e(str_contains($attendance->observacion_salida, 'temprano') ? 'attendance-deviation--late' : (str_contains($attendance->observacion_salida, 'tarde') ? 'attendance-deviation--early' : '')); ?>">
                                     <?php echo e($attendance->observacion_salida); ?>
 
                                 </div>
@@ -202,6 +209,20 @@
                                     <small class="d-block text-muted"><?php echo e($attendance->employee->area?->descripcion ?: ($attendance->employee->departamento ?: 'Sin área')); ?></small>
                                 <?php else: ?>
                                     <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td data-label="Incidencias">
+                                <?php $__empty_2 = true; $__currentLoopData = $attendance->incidencias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $incidencia): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
+                                    <?php
+                                        $incidenciaEstado = ucfirst($incidencia->estado);
+                                    ?>
+                                    <div class="mb-1">
+                                        <span class="attendance-incident-status attendance-incident-status--<?php echo e($incidencia->estado); ?>"><?php echo e($incidenciaEstado); ?></span>
+                                        <span class="attendance-incident-title"><?php echo e($incidencia->asunto); ?></span>
+                                    </div>
+                                    <div class="small text-muted"><?php echo e($incidencia->tipo_justificacion); ?></div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
+                                    <span class="text-muted">Sin incidencia</span>
                                 <?php endif; ?>
                             </td>
                             <td data-label="Dispositivo">
@@ -223,7 +244,7 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="10">
+                            <td colspan="11">
                                 <?php echo $__env->make('partials.empty-state', [
                                     'icon'     => request('type') || request('from') || request('to') || request('device_id')
                                         ? 'bi-search'

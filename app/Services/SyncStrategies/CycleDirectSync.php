@@ -393,7 +393,12 @@ class CycleDirectSync implements SyncStrategyInterface
             $rows = [];
             foreach (array_chunk($groups, 500) as $chunk) {
                 $placeholders = implode(',', array_fill(0, count($chunk), '?'));
-                $batch = $fbReader->fetchRows('ALUMNOS_GRUPOS', $fbCols, 'CODIGO_GRUPO IN ('.$placeholders.')', $chunk);
+                $batch = $fbReader->fetchRows(
+                    'ALUMNOS_GRUPOS',
+                    $fbCols,
+                    'INICIAL = ? AND FINAL = ? AND PERIODO = ? AND CODIGO_GRUPO IN ('.$placeholders.')',
+                    array_merge([$I, $F, $P], $chunk),
+                );
                 foreach ($batch as $row) {
                     $row['INICIAL'] = $I;
                     $row['FINAL'] = $F;
@@ -409,8 +414,8 @@ class CycleDirectSync implements SyncStrategyInterface
                 array_map(fn ($r) => strtolower($r['Field']), $this->getMysqlColumns($mysql, 'alumnos_grupos')),
                 $rows,
                 $deleteOrphans,
-                null,
-                [],
+                'inicial = ? AND final = ? AND periodo = ?',
+                [$I, $F, $P],
                 $skipExisting,
             );
             $result['log'][] = ['tipo' => 'info', 'msg' => 'ALUMNOS_GRUPOS: ciclo heredado desde '.count($groups).' grupos'];
@@ -474,7 +479,12 @@ class CycleDirectSync implements SyncStrategyInterface
                 continue;
             }
             $placeholders = implode(',', array_fill(0, count($chunk), '?'));
-            $groupStudents = array_merge($groupStudents, $reader->fetchRows('ALUMNOS_GRUPOS', ['NUMEROALUMNO'], 'CODIGO_GRUPO IN ('.$placeholders.')', $chunk));
+            $groupStudents = array_merge($groupStudents, $reader->fetchRows(
+                'ALUMNOS_GRUPOS',
+                ['NUMEROALUMNO'],
+                'INICIAL = ? AND FINAL = ? AND PERIODO = ? AND CODIGO_GRUPO IN ('.$placeholders.')',
+                array_merge([$I, $F, $P], $chunk),
+            ));
         }
         $candidateIds = array_values(array_unique(array_filter(array_column($groupStudents, 'NUMEROALUMNO'))));
         $alumnoRows = [];

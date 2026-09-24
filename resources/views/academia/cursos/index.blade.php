@@ -9,9 +9,11 @@
         <a href="{{ route('academia.ciclos.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-calendar me-1"></i> Cambiar ciclo
         </a>
-        <a href="{{ route('academia.cursos.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo curso
-        </a>
+        @if (auth()->user()->canAccessModule('academia.cursos', 'create'))
+            <a href="{{ route('academia.cursos.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo curso
+            </a>
+        @endif
     @endslot
 </x-page-header>
 
@@ -23,8 +25,10 @@
                     'icon' => 'bi-book',
                     'title' => 'No hay cursos registrados para este ciclo',
                     'desc' => 'Crea el primer curso para empezar a asignar docentes, materias y alumnos.',
-                    'cta' => ['label' => 'Crear curso', 'url' => route('academia.cursos.create')],
-                    'ctaLink' => true,
+                    'cta' => auth()->user()->canAccessModule('academia.cursos', 'create')
+                        ? ['label' => 'Crear curso', 'url' => route('academia.cursos.create')]
+                        : null,
+                    'ctaLink' => auth()->user()->canAccessModule('academia.cursos', 'create'),
                 ])
             </div>
         @else
@@ -36,6 +40,7 @@
                             <th>Descripción</th>
                             <th>Materia</th>
                             <th>Maestro(s)</th>
+                            <th>Horario propio</th>
                             <th>Nivel</th>
                             <th>Turno</th>
                             <th>Sede</th>
@@ -56,6 +61,20 @@
                                     @empty
                                         <span class="text-muted">Sin maestro asignado</span>
                                     @endforelse
+                                </td>
+                                <td class="small">
+                                    @if ($c->desde || $c->hasta || $c->sesiones)
+                                        <div>
+                                            {{ $c->desde?->format('d/m/Y') ?? 'Sin inicio' }}
+                                            al
+                                            {{ $c->hasta?->format('d/m/Y') ?? 'Sin fin' }}
+                                        </div>
+                                        <div class="text-muted">
+                                            {{ $c->sesiones ?? 0 }} sesiones · {{ $c->turno_nombre }}
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Sin horario propio</span>
+                                    @endif
                                 </td>
                                 <td>{{ $c->nivelRel?->descripcion ?? $c->plan?->nivelRel?->descripcion ?? $c->nivel ?? 'Nivel no asignado' }}</td>
                                 <td>{{ $c->turno_nombre }}</td>

@@ -247,7 +247,7 @@ class FirebirdSyncTest extends TestCase
 
         $expectedCatalogs = ['CFGSEDES', 'CFGNIVELES', 'CFGTURNOS', 'CICLOS',
             'CFGPLANES_MST', 'CFGPLANES_DET', 'CFGSESIONES', 'CFGTIPOSEVALUACION',
-            'EMPLEADOS_CONTRATOS_CAT', 'ALUMNOS', 'PROFESORES'];
+            'EMPLEADOS_CONTRATOS_CAT', 'PROFESORES'];
 
         foreach ($expectedCatalogs as $table) {
             $this->assertArrayHasKey($table, $strategyMap);
@@ -267,13 +267,13 @@ class FirebirdSyncTest extends TestCase
         }
     }
 
-    public function test_alumnos_only_has_niveles(): void
+    public function test_alumnos_tables_require_cycle_strategy(): void
     {
         $strategyMap = CustomSyncStrategy::TABLE_STRATEGY_MAP;
 
-        // Solo ALUMNOS_NIVELES queda en la estrategia 'alumnos'
+        // Ambos datos de alumnos se sincronizan con el ciclo seleccionado.
         $alumnosTables = array_filter($strategyMap, fn ($v) => $v === 'alumnos');
-        $this->assertEquals(['ALUMNOS_NIVELES'], array_keys($alumnosTables));
+        $this->assertEquals(['ALUMNOS', 'ALUMNOS_NIVELES'], array_keys($alumnosTables));
     }
 
     public function test_kardex_is_excluded_from_sync(): void
@@ -338,6 +338,22 @@ class FirebirdSyncTest extends TestCase
         }
         $this->assertContains('ALUMNOS_GRUPOS', $cicloTables,
             'ALUMNOS_GRUPOS debe estar en la sección ciclo (filtrado por ciclo)');
+    }
+
+    public function test_alumnos_in_ciclo_section(): void
+    {
+        $groups = $this->getCatalogGroups();
+
+        $cicloTables = [];
+        foreach ($groups['ciclo'] as $tables) {
+            foreach ($tables as $table) {
+                $cicloTables[] = $table['fb'];
+            }
+        }
+
+        $this->assertContains('ALUMNOS', $cicloTables);
+        $this->assertContains('ALUMNOS_NIVELES', $cicloTables);
+        $this->assertArrayNotHasKey('alumnos', $groups);
     }
 
     public function test_kardex_not_in_any_section(): void

@@ -13,11 +13,13 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => ''.e($curso->nombre_curso).'','subtitle' => ''.e($curso->clave_curso).' | '.e($curso->nombre_curso).' · '.e($curso->nivelRel?->descripcion ?? $curso->plan?->nivelRel?->descripcion ?? $curso->nivel ?? 'Nivel no asignado').' · '.e($curso->turno_nombre).' · '.e($curso->sede?->descripcion ?? $curso->id_campus).' · '.e($alumnos->count()).' alumnos','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
-        <div class="btn-group btn-group-sm">
-            <a href="<?php echo e(route('academia.cursos.edit', $curso)); ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
-        </div>
+        <?php if(auth()->user()->canAccessModule('academia.cursos', 'update')): ?>
+            <div class="btn-group btn-group-sm">
+                <a href="<?php echo e(route('academia.cursos.edit', $curso)); ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            </div>
+        <?php endif; ?>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
@@ -55,14 +57,14 @@
 <?php endif; ?>
     <?php if (isset($component)) { $__componentOriginal527fae77f4db36afc8c8b7e9f5f81682 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal527fae77f4db36afc8c8b7e9f5f81682 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.stat-card','data' => ['icon' => 'bi-person-badge','label' => 'Maestros','value' => $docentes->count(),'color' => 'green']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.stat-card','data' => ['icon' => 'bi-person-badge','label' => 'Maestros','value' => count($docentes),'color' => 'green']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
 <?php $component->withName('stat-card'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['icon' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('bi-person-badge'),'label' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Maestros'),'value' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($docentes->count()),'color' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('green')]); ?>
+<?php $component->withAttributes(['icon' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('bi-person-badge'),'label' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('Maestros'),'value' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(count($docentes)),'color' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute('green')]); ?>
         <div class="kpi-trend flat">–</div>
      <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
@@ -207,7 +209,7 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <?php if($m?->id): ?>
+                                        <?php if($m?->id && auth()->user()->canAccessModule('academia.cursos', 'materia')): ?>
                                         <button type="button" class="btn btn-outline-danger" onclick="eliminarMateria(<?php echo e($m->id); ?>)" title="Quitar">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -229,6 +231,33 @@
             <span class="badge bg-light text-dark border me-2 mb-2"><?php echo e($docente->nombre_completo ?: $docente->clave_profesor); ?></span>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <span class="text-muted">No hay maestro asignado en los horarios de esta materia.</span>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header fw-bold">Horario propio del curso</div>
+    <div class="card-body">
+        <?php if($curso->desde || $curso->hasta || $curso->sesiones): ?>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Vigencia</span>
+                    <?php echo e($curso->desde?->format('d/m/Y') ?? 'Sin inicio'); ?> al <?php echo e($curso->hasta?->format('d/m/Y') ?? 'Sin fin'); ?>
+
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Sesiones</span>
+                    <?php echo e($curso->sesiones ?? 0); ?>
+
+                </div>
+                <div class="col-md-4">
+                    <span class="text-muted d-block">Turno</span>
+                    <?php echo e($curso->turno_nombre); ?>
+
+                </div>
+            </div>
+        <?php else: ?>
+            <span class="text-muted">Este curso no tiene horario propio registrado.</span>
         <?php endif; ?>
     </div>
 </div>
@@ -291,6 +320,7 @@
 </div>
 
 
+<?php if(auth()->user()->canAccessModule('academia.cursos', 'materia')): ?>
 <div class="modal fade" id="modalAgregarMateria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -340,9 +370,11 @@
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
-document.getElementById('formAgregarMateria').addEventListener('submit', function(e) {
+const materiaForm = document.getElementById('formAgregarMateria');
+if (materiaForm) materiaForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     fetch('/academia/cursos/<?php echo e($curso->id); ?>/materia', {

@@ -22,9 +22,13 @@
 
     $actions = [
         ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.show', $ciclo), 'style' => 'primary', 'title' => 'Ver', 'icon' => 'bi bi-eye'],
-        ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.edit', $ciclo), 'style' => 'secondary', 'title' => 'Editar', 'icon' => 'bi bi-pencil'],
-        ['type' => 'button', 'style' => fn ($ciclo) => $ciclo->activo ? 'warning' : 'success', 'onclick' => fn ($ciclo) => "toggleCicloActivo('{$ciclo->id}', " . ($ciclo->activo ? 'false' : 'true') . ")", 'title' => fn ($ciclo) => $ciclo->activo ? 'Desactivar' : 'Activar', 'icon' => fn ($ciclo) => 'bi bi-' . ($ciclo->activo ? 'pause' : 'play')],
     ];
+    if (auth()->user()->canAccessModule('academia.ciclos', 'update')) {
+        $actions[] = ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.edit', $ciclo), 'style' => 'secondary', 'title' => 'Editar', 'icon' => 'bi bi-pencil'];
+    }
+    if (auth()->user()->canAccessModule('academia.ciclos', 'activo')) {
+        $actions[] = ['type' => 'button', 'style' => fn ($ciclo) => $ciclo->activo ? 'warning' : 'success', 'onclick' => fn ($ciclo) => "toggleCicloActivo('{$ciclo->id}', " . ($ciclo->activo ? 'false' : 'true') . ")", 'title' => fn ($ciclo) => $ciclo->activo ? 'Desactivar' : 'Activar', 'icon' => fn ($ciclo) => 'bi bi-' . ($ciclo->activo ? 'pause' : 'play')];
+    }
 ?>
 
 <?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
@@ -38,9 +42,11 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Ciclos Escolares','subtitle' => 'Administración del ciclo escolar activo y su catálogo.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
-        <a href="<?php echo e(route('academia.ciclos.create')); ?>" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Ciclo
-        </a>
+        <?php if(auth()->user()->canAccessModule('academia.ciclos', 'create')): ?>
+            <a href="<?php echo e(route('academia.ciclos.create')); ?>" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo Ciclo
+            </a>
+        <?php endif; ?>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
@@ -74,6 +80,7 @@
 <?php unset($__componentOriginalc8463834ba515134d5c98b88e1a9dc03); ?>
 <?php endif; ?>
 
+<?php if(auth()->user()->canAccessModule('academia.ciclos', 'create')): ?>
 
 <div class="modal fade" id="modalCrearCiclo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -126,6 +133,7 @@
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 function toggleCicloActivo(id, activo) {

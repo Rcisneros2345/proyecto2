@@ -16,26 +16,8 @@
       <div class="small text-secondary-token" style="font-family:'JetBrains Mono',monospace">{{ $ciclo->fechaInicialFormateada }} &mdash; {{ $ciclo->fechaFinalFormateada }}</div>
     </div>
 
-    <div class="vr d-none d-md-block" style="height:44px;background:var(--border)"></div>
-
-    {{-- Selector in-page: SSR ?ciclo_principal= + enhancement JS --}}
-    <form method="GET" action="{{ route('academia.dashboard') }}" class="d-flex align-items-center gap-2 flex-wrap" id="ciclo-switcher" aria-label="Cambiar ciclo escolar">
-      <label for="ciclo_principal" class="form-label mb-0 small text-secondary-token fw-semibold">Cambiar ciclo</label>
-      <select name="ciclo_principal" id="ciclo_principal" class="form-select form-select-sm" style="min-width:220px;max-width:280px"
-              aria-label="Seleccionar ciclo escolar" data-cycle-select>
-        @foreach ($ciclos as $c)
-          <option value="{{ $c->label }}" {{ $c->label === $ciclo->label ? 'selected' : '' }}>
-            {{ $c->label }}{{ $c->descripcion ? ' - '.Str::limit($c->descripcion, 28) : '' }} {{ $c->activo ? '' : '(inactivo)' }}
-          </option>
-        @endforeach
-      </select>
-      <button type="submit" class="btn btn-sm btn-outline-secondary" data-cycle-submit>Ver</button>
-      <span class="small text-tertiary-token d-none d-lg-inline" data-cycle-hint>{{ $ciclos->count() }} ciclos disponibles</span>
-    </form>
-
     <div class="ms-auto d-flex align-items-center gap-2">
       <a href="{{ route('academia.ciclos.show', $ciclo) }}" class="btn btn-outline-primary btn-sm">Ver detalle <i class="bi bi-arrow-right ms-1"></i></a>
-      <a href="{{ route('academia.ciclos.index') }}" class="btn btn-ghost btn-sm">Todos los ciclos</a>
     </div>
   </div>
   {{-- hint contextual --}}
@@ -125,8 +107,8 @@
       ['label' => 'Horarios',   'icon' => 'bi-calendar-week',  'color' => 'orange',  'ciclo' => $kpis['horarios'],                                   'total' => $totales['horarios'] ?? null,       'href' => route('academia.horarios.clase', ['ciclo_principal' => $ciclo->label]),    'desc' => 'Clases y asistencia'],
       ['label' => 'Kardex',     'icon' => 'bi-file-earmark-text','color' => 'pink',   'ciclo' => $kpis['kardex'] ?? 0,                                'total' => $totales['kardex'] ?? null,         'href' => route('academia.kardex.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Evaluaciones del ciclo'],
       ['label' => 'Cursos',     'icon' => 'bi-book',            'color' => 'teal',    'ciclo' => $kpis['cursos'],                                     'total' => $totales['cursos'] ?? null,         'href' => route('academia.cursos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Oferta por ciclo'],
-      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias_ciclo'] ?? null,                     'total' => $totales['materias'] ?? null,        'href' => route('academia.planes.index'),                                            'desc' => 'Catalogo global'],
-      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => null,                                                'total' => $totales['planes'] ?? null,         'href' => route('academia.planes.index'),                                            'desc' => 'Planes de estudio'],
+      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias'],                                    'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Materias del ciclo'],
+      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => $kpis['planes'],                                      'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Planes del ciclo'],
     ];
   @endphp
 
@@ -139,7 +121,7 @@
           <div class="flex-grow-1 min-w-0">
             <div class="fw-bold" style="font-size:13px">{{ $m['label'] }}</div>
             <div class="d-flex align-items-baseline gap-2">
-              <span class="fw-bold" style="font-family:'JetBrains Mono',monospace;font-size:22px" data-mod-ciclo="{{ $m['label'] }}">{{ $m['ciclo'] !== null ? $m['ciclo'] : '&mdash;' }}</span>
+              <span class="fw-bold" style="font-family:'JetBrains Mono',monospace;font-size:22px" data-mod-ciclo="{{ $m['label'] }}">{{ $m['ciclo'] !== null ? $m['ciclo'] : '—' }}</span>
               @if($m['ciclo'] !== null)
                 <span class="small text-tertiary-token">en este ciclo</span>
               @endif
@@ -153,6 +135,69 @@
       </a>
     @endforeach
   </div>
+</section>
+
+{{-- ========== ESTADO ACADEMICO ========== --}}
+<section class="academic-status-panel card mb-4" aria-labelledby="academic-status-title">
+  <div class="card-body d-flex align-items-center gap-3 py-3">
+    <span class="brand-mark academic-status-mark" aria-hidden="true"><i class="bi bi-fingerprint"></i></span>
+    <div class="flex-grow-1 min-w-0">
+      <div class="small text-tertiary-token text-uppercase fw-semibold" style="letter-spacing:.08em">Estado académico</div>
+      <h2 id="academic-status-title" class="h5 mb-0">{{ $ciclo->label }} · {{ $ciclo->descripcion ?: 'Ciclo seleccionado' }}</h2>
+    </div>
+    <div class="text-end small text-secondary-token">
+      <div>{{ number_format($kpis['alumnos']) }} alumnos únicos</div>
+      <div>{{ number_format($kpis['grupos']) }} grupos · {{ number_format($kpis['cursos']) }} cursos</div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4" aria-labelledby="desglose-heading">
+  <div class="section-heading"><h2 id="desglose-heading" class="h6 fw-bold mb-0">Desglose operativo</h2><span class="small text-tertiary-token">Distribución del ciclo seleccionado</span></div>
+  <div class="row g-3">
+    <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['alumnosPorGrupo']->count()) }} combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary">{{ number_format($kpis['alumnos']) }}</span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
+      @forelse($dashboardSummary['alumnosPorGrupo'] as $row)
+        <tr><td>{{ $row->grado }}</td><td>{{ $row->tipo_grupo ?: 'Sin definir' }}</td><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end fw-semibold">{{ number_format($row->alumnos) }}</td></tr>
+      @empty
+        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
+      @endforelse
+      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
+    <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
+      @forelse($dashboardSummary['cursosPorSede'] as $row)
+        <tr><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end">{{ $row->cursos }}</td><td class="text-end">{{ $row->planes }}</td><td class="text-end">{{ $row->materias }}</td></tr>
+      @empty
+        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
+      @endforelse
+      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
+  </div>
+</section>
+
+<section class="row g-3 mb-4" aria-label="Profesores y horas de clase">
+  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores PA y PTC</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
+    @foreach($dashboardSummary['profesoresPorOrigen'] as $row)
+      @php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; $hours = $dashboardSummary['horasPorOrigen']->firstWhere('origen', $row->origen); @endphp
+      <tr><td><span class="badge {{ $originLabel === 'PTC' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info' }}">{{ $originLabel }}</span></td><td class="text-end">{{ $row->profesores }}</td><td class="text-end">{{ $hours->clases ?? 0 }}</td><td class="text-end">{{ $hours->horas ?? 0 }}</td></tr>
+    @endforeach
+    </tbody></table></div>
+    @unless($dashboardSummary['dataQuality']['hoursCaptured'])<div class="card-footer small text-warning"><i class="bi bi-info-circle me-1"></i>La fuente no trae horas capturadas; se muestran las clases registradas.</div>@endunless
+  </div></div>
+  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor PA/PTC</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
+    @forelse($dashboardSummary['cursosPorOrigen'] as $row)
+      @php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; @endphp
+      <tr><td>{{ $row->nombre_curso ?: $row->clave_curso }}</td><td>{{ $originLabel }}</td><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end">{{ $row->sesiones }}</td></tr>
+    @empty
+      <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos registrados</td></tr>
+    @endforelse
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-origin"></div></div></div>
+</section>
+
+<section class="row g-3 mb-4" aria-label="Catálogos académicos">
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Niveles educativos</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['niveles']->count()) }} niveles</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="education-levels" title="Exportar niveles"><i class="bi bi-download"></i><span class="visually-hidden">Exportar niveles</span></button></div><div class="table-responsive"><table id="education-levels" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-educativos"><thead><tr><th>Nivel</th><th class="text-end">Grupos</th></tr></thead><tbody>
+    @forelse($dashboardSummary['niveles'] as $row)<tr><td>{{ $row->nivel ?: 'Sin definir' }}</td><td class="text-end">{{ $row->grupos }}</td></tr>@empty<tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin niveles</td></tr>@endforelse
+    </tbody></table></div></div></div>
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Turnos</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['turnos']->count()) }} turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="shifts" title="Exportar turnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar turnos</span></button></div><div class="table-responsive"><table id="shifts" class="table table-sm dashboard-data-table" data-export-name="turnos"><thead><tr><th>Turno</th><th class="text-end">Grupos</th></tr></thead><tbody>
+    @forelse($dashboardSummary['turnos'] as $row)<tr><td>{{ $row->turno ?: 'Sin definir' }}</td><td class="text-end">{{ $row->grupos }}</td></tr>@empty<tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin turnos</td></tr>@endforelse
+    </tbody></table></div></div></div>
 </section>
 
 {{-- ========== DIAGNOSTICO — graficos con estados ========== --}}
@@ -262,52 +307,6 @@
   </div>
 </div>
 
-{{-- ========== CICLOS DISPONIBLES ========== --}}
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span class="fw-bold">Ciclos disponibles</span>
-    <a href="{{ route('academia.ciclos.index') }}" class="btn btn-sm btn-ghost">Ver todos <i class="bi bi-arrow-right ms-1"></i></a>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead>
-          <tr>
-            <th scope="col">Ciclo</th>
-            <th scope="col">Descripcion</th>
-            <th scope="col">Fechas</th>
-            <th scope="col">Estado</th>
-            <th scope="col" class="text-end">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse ($ciclos as $c)
-            <tr>
-              <td class="fw-semibold">{{ $c->label }}</td>
-              <td>{{ $c->descripcion }}</td>
-              <td class="small text-muted">{{ $c->fechaInicialFormateada }} - {{ $c->fechaFinalFormateada }}</td>
-              <td>
-                <span class="badge badge--status {{ $c->activo ? 'badge--active' : 'badge--inactive' }}">
-                  {{ $c->activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="text-end">
-                <a href="{{ route('academia.ciclos.show', $c) }}" class="btn btn-sm btn-outline-primary">Ver</a>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="5" class="text-center text-tertiary-token py-4">
-                <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
-                No hay ciclos configurados.
-              </td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 @endsection
 
 {{-- ========== CSS inline ========== --}}
@@ -453,5 +452,47 @@
     if (window.fetch) e.preventDefault();
   });
 })();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const pageSize = 20;
+
+  document.querySelectorAll('.dashboard-data-table').forEach(function (table) {
+    const rows = Array.from(table.tBodies[0]?.rows || []);
+    const pager = document.querySelector('[data-pagination-for="' + table.id + '"]');
+    if (!pager || rows.length <= pageSize || rows.some(row => row.querySelector('[colspan]'))) return;
+    let page = 1;
+    const pages = Math.ceil(rows.length / pageSize);
+
+    const render = function () {
+      rows.forEach((row, index) => {
+        row.hidden = index < (page - 1) * pageSize || index >= page * pageSize;
+      });
+      pager.innerHTML = '<span class="dashboard-table-page-info">Página ' + page + ' de ' + pages + ' · ' + rows.length + ' registros</span>'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" data-page-prev ' + (page === 1 ? 'disabled' : '') + ' aria-label="Página anterior"><i class="bi bi-chevron-left"></i></button>'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" data-page-next ' + (page === pages ? 'disabled' : '') + ' aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></button>';
+      pager.querySelector('[data-page-prev]').onclick = function () { if (page > 1) { page--; render(); } };
+      pager.querySelector('[data-page-next]').onclick = function () { if (page < pages) { page++; render(); } };
+    };
+    render();
+  });
+
+  document.querySelectorAll('.js-export-table').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const table = document.getElementById(button.dataset.tableTarget);
+      if (!table) return;
+      const csv = Array.from(table.rows).map(row => Array.from(row.cells).map(cell => '"' + cell.innerText.replace(/"/g, '""').replace(/\s+/g, ' ').trim() + '"').join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = (table.dataset.exportName || table.id) + '.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  });
+});
 </script>
 @endpush

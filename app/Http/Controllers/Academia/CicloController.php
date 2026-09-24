@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Academia;
 use App\Exceptions\NoCiclosConfiguradosException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CicloFormRequest;
+use App\Models\Academia\AlumnoGrupo;
 use App\Models\Academia\Ciclo;
 use App\Models\Academia\Curso;
 use App\Models\Academia\Grupo;
@@ -32,8 +33,15 @@ class CicloController extends Controller
             ->paginate((int) $request->query('per_page', 20));
 
         foreach ($ciclos as $ciclo) {
-            $ciclo->setAttribute('grupos_count', Grupo::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->count());
-            $ciclo->setAttribute('horarios_count', HorarioDet::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->count());
+            $grupoQuery = Grupo::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
+                ->where('id_campus', '1');
+            $ciclo->setAttribute('grupos_count', $grupoQuery->count());
+            $ciclo->setAttribute('alumnos_count', AlumnoGrupo::query()
+                ->where('inicial', $ciclo->inicial)
+                ->where('final', $ciclo->final)
+                ->where('periodo', $ciclo->periodo)
+                ->count());
+            $ciclo->setAttribute('horarios_count', $ciclo->grupos_count);
             $ciclo->setAttribute('cursos_count', Curso::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->count());
         }
 

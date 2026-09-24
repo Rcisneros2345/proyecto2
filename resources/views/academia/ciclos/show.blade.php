@@ -7,14 +7,18 @@
 <x-page-header title="{{ $ciclo->label }}" subtitle="{{ $ciclo->descripcion }}" :hide-title="false">
     @slot('actions')
         <div class="btn-group btn-group-sm">
-            <a href="{{ route('academia.ciclos.edit', $ciclo) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
-            <button class="btn btn-outline-{{ $ciclo->activo ? 'warning' : 'success' }}"
-                    onclick="toggleCicloActivo('{{ $ciclo->id }}', {{ $ciclo->activo ? 'false' : 'true' }})">
-                <i class="bi bi-{{ $ciclo->activo ? 'pause' : 'play' }} me-1"></i>
-                {{ $ciclo->activo ? 'Desactivar' : 'Activar' }}
-            </button>
+            @if (auth()->user()->canAccessModule('academia.ciclos', 'update'))
+                <a href="{{ route('academia.ciclos.edit', $ciclo) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            @endif
+            @if (auth()->user()->canAccessModule('academia.ciclos', 'activo'))
+                <button class="btn btn-outline-{{ $ciclo->activo ? 'warning' : 'success' }}"
+                        onclick="toggleCicloActivo('{{ $ciclo->id }}', {{ $ciclo->activo ? 'false' : 'true' }})">
+                    <i class="bi bi-{{ $ciclo->activo ? 'pause' : 'play' }} me-1"></i>
+                    {{ $ciclo->activo ? 'Desactivar' : 'Activar' }}
+                </button>
+            @endif
         </div>
     @endslot
 </x-page-header>

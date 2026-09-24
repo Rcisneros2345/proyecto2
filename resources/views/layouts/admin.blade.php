@@ -209,14 +209,16 @@
 
             @endif
 
-        <div class="nav-group-title">Herramientas</div>
-        <ul class="app-nav">
-            <li class="nav-item">
-                <a href="{{ route('attendances.export', request()->query()) }}" data-tooltip="Exportar CSV" class="nav-link" title="Exportar asistencias a CSV">
-                    <i class="bi bi-file-earmark-spreadsheet"></i><span class="nav-label">Exportar asistencias</span>
-                </a>
-            </li>
-        </ul>
+        @if (auth()->user()->isAdmin() || auth()->user()->hasModulePermission('asistencias', 'export'))
+            <div class="nav-group-title">Herramientas</div>
+            <ul class="app-nav">
+                <li class="nav-item">
+                    <a href="{{ route('attendances.export', request()->query()) }}" data-tooltip="Exportar CSV" class="nav-link" title="Exportar asistencias a CSV">
+                        <i class="bi bi-file-earmark-spreadsheet"></i><span class="nav-label">Exportar asistencias</span>
+                    </a>
+                </li>
+            </ul>
+        @endif
         </div>
 
         @auth

@@ -161,11 +161,6 @@
                                 <span class="fb-step-label">Por Ciclo</span>
                                 <span class="badge bg-secondary-subtle text-secondary ms-auto" data-mini="ciclo">0/{{ collect($catalogGroups['ciclo'])->flatten(1)->count() }}</span>
                             </div>
-                            <div class="fb-step" data-step="alumnos">
-                                <span class="fb-step-num">3</span>
-                                <span class="fb-step-label">Alumnos</span>
-                                <span class="badge bg-secondary-subtle text-secondary ms-auto" data-mini="alumnos">0/{{ collect($catalogGroups['alumnos'])->flatten(1)->count() }}</span>
-                            </div>
                         </div>
 
                         {{-- FASE 1: Catálogos Base --}}
@@ -264,45 +259,6 @@
                             <div class="fb-section-hint" data-hint="ciclo">Ninguna seleccionada</div>
                         </fieldset>
 
-                        {{-- FASE 3: Datos de Alumnos --}}
-                        <fieldset class="fb-phase" data-phase="alumnos">
-                            <legend class="visually-hidden">Datos de Alumnos</legend>
-                            <div class="fb-section-header" data-section="alumnos">
-                                <label class="fb-section-title">
-                                    <input type="checkbox" class="form-check-input fb-parent" id="parent-alumnos" aria-label="Seleccionar todos los datos de alumnos">
-                                    <i class="bi bi-people text-warning" aria-hidden="true"></i>
-                                    <span>Alumnos</span>
-                                    <small>(requieren ciclo + IDs)</small>
-                                </label>
-                                <span class="fb-counter is-empty" data-counter="alumnos" aria-live="polite">0 / {{ collect($catalogGroups['alumnos'])->flatten(1)->count() }}</span>
-                            </div>
-                            <div data-ciclo-banner hidden>
-                                <i class="bi bi-info-circle"></i> Requiere ciclo + alumnos inscritos. Si sincronizas sin ciclo traerá 0 filas.
-                            </div>
-                            <div id="group-alumnos" class="row g-2">
-                                @foreach($catalogGroups['alumnos'] as $groupName => $tables)
-                                    <div class="col-12 col-md-6">
-                                        <div class="fb-table-group">
-                                            <div class="fb-tg-header">
-                                                <span class="fw-semibold">{{ $groupName }}</span>
-                                                <span class="text-muted small">{{ count($tables) }} tablas</span>
-                                            </div>
-                                            @foreach($tables as $table)
-                                                <label class="fb-sync-option">
-                                                    <input class="form-check-input sync-table-checkbox" type="checkbox" name="tables[]" value="{{ $table['fb'] }}" data-mysql="{{ $table['mysql'] }}" data-requires-ciclo="true" data-requires-alumnos="true">
-                                                    <div class="fb-option-info">
-                                                        <div class="fb-option-name">{{ $table['fb'] }}</div>
-                                                        <div class="fb-option-desc">→ {{ $table['mysql'] }}</div>
-                                                    </div>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <div class="fb-section-hint" data-hint="alumnos">Ninguna seleccionada</div>
-                        </fieldset>
-
                         {{-- Quick Actions --}}
                         <div class="fb-quick-actions" role="toolbar" aria-label="Acciones rápidas de selección">
                             <button type="button" class="btn btn-primary btn-sm" id="select-all-global" aria-label="Seleccionar todas las tablas">
@@ -314,13 +270,12 @@
                             </button>
                             <span class="ms-auto small" style="font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums" aria-live="polite">
                                 <span id="selected-count">0</span> de <span id="selected-total">17</span>
-                                <span class="text-muted d-none d-md-inline" id="selected-breakdown"> · Base 0 · Ciclo 0 · Alumnos 0</span>
+                                <span class="text-muted d-none d-md-inline" id="selected-breakdown"> · Base 0 · Ciclo 0</span>
                             </span>
                             <div class="w-100 d-md-none"></div>
                             <div class="d-flex gap-2 flex-wrap">
                                 <button type="button" class="btn btn-sm btn-outline-primary" data-toggle-section="base">Base <span class="badge bg-primary-subtle text-primary ms-1" data-mini="base">0</span></button>
                                 <button type="button" class="btn btn-sm btn-outline-info" data-toggle-section="ciclo">Ciclo <span class="badge bg-info-subtle text-info ms-1" data-mini="ciclo">0</span></button>
-                                <button type="button" class="btn btn-sm btn-outline-warning" data-toggle-section="alumnos">Alumnos <span class="badge bg-warning-subtle text-warning ms-1" data-mini="alumnos">0</span></button>
                             </div>
                         </div>
 
@@ -377,7 +332,6 @@
                             <div class="d-flex flex-wrap gap-2 mb-2">
                                 <span class="fb-summary-pill bg-primary-subtle text-primary" data-pill="base">Base: 0</span>
                                 <span class="fb-summary-pill bg-info-subtle text-info" data-pill="ciclo">Ciclo: 0</span>
-                                <span class="fb-summary-pill bg-warning-subtle text-warning" data-pill="alumnos">Alumnos: 0</span>
                             </div>
                             <div class="small text-muted mb-2" id="summary-ciclo-display" hidden>
                                 <i class="bi bi-calendar3"></i> Ciclo: <strong id="summary-ciclo-value"></strong>
@@ -508,8 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Section config ---
     const sections = {
         base:    { parent: '#parent-base',    selector: '.sync-table-checkbox:not([data-requires-ciclo])' },
-        ciclo:   { parent: '#parent-ciclo',   selector: '.sync-table-checkbox[data-requires-ciclo]:not([data-requires-alumnos])' },
-        alumnos: { parent: '#parent-alumnos', selector: '.sync-table-checkbox[data-requires-alumnos]' },
+        ciclo:   { parent: '#parent-ciclo',   selector: '.sync-table-checkbox[data-requires-ciclo]' },
     };
 
     // --- FK Dependency map (Firebird table name → [required tables]) ---
@@ -688,8 +641,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const breakdown = document.getElementById('selected-breakdown');
         if (breakdown) {
-            const b = getSectionStats('base'), c = getSectionStats('ciclo'), a = getSectionStats('alumnos');
-            breakdown.textContent = ' · Base ' + b.checked + ' · Ciclo ' + c.checked + ' · Alumnos ' + a.checked;
+            const b = getSectionStats('base'), c = getSectionStats('ciclo');
+            breakdown.textContent = ' · Base ' + b.checked + ' · Ciclo ' + c.checked;
         }
 
         // Ciclo dependency
@@ -726,11 +679,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (summaryEmpty) summaryEmpty.hidden = hasAny;
         if (summaryContent) summaryContent.hidden = !hasAny;
         if (hasAny) {
-            const b = getSectionStats('base'), c = getSectionStats('ciclo'), a = getSectionStats('alumnos');
-            const pill = (k, label, cls) => { const el = document.querySelector('[data-pill="' + k + '"]'); if(el){ el.textContent = label + ': ' + (sections[k] ? getSectionStats(k).checked : 0); } };
+            const pill = (k, label) => { const el = document.querySelector('[data-pill="' + k + '"]'); if(el){ el.textContent = label + ': ' + (sections[k] ? getSectionStats(k).checked : 0); } };
             pill('base', 'Base', 'primary');
             pill('ciclo', 'Ciclo', 'info');
-            pill('alumnos', 'Alumnos', 'warning');
             const cicloDisplay = document.getElementById('summary-ciclo-display');
             const cicloValue = document.getElementById('summary-ciclo-value');
             if (cicloDisplay) cicloDisplay.hidden = !cicloOk;

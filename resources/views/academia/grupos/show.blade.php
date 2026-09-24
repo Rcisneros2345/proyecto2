@@ -9,11 +9,13 @@
 @endphp
 <x-page-header title="{{ $grupo->codigo_grupo }}" subtitle="{{ $grupo->grado }}° · {{ $grupo->turno_nombre }} · {{ $grupo->nivelRel?->descripcion ?? $grupo->nivel }} · {{ $grupo->modalidad_nombre }} · {{ $grupo->inscritos }} inscritos · {{ $grupo->sede?->descripcion }}" :hide-title="false">
     @slot('actions')
-        <div class="btn-group btn-group-sm">
-            <a href="{{ route('academia.grupos.asistencia', $grupo) }}" class="btn btn-success">
-                <i class="bi bi-check-circle me-1"></i> Asistencia
-            </a>
-        </div>
+        @if (auth()->user()->canAccessModule('academia.grupos', 'asistencia'))
+            <div class="btn-group btn-group-sm">
+                <a href="{{ route('academia.grupos.asistencia', $grupo) }}" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i> Asistencia
+                </a>
+            </div>
+        @endif
     @endslot
 </x-page-header>
 

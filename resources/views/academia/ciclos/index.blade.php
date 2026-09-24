@@ -24,16 +24,22 @@
 
     $actions = [
         ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.show', $ciclo), 'style' => 'primary', 'title' => 'Ver', 'icon' => 'bi bi-eye'],
-        ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.edit', $ciclo), 'style' => 'secondary', 'title' => 'Editar', 'icon' => 'bi bi-pencil'],
-        ['type' => 'button', 'style' => fn ($ciclo) => $ciclo->activo ? 'warning' : 'success', 'onclick' => fn ($ciclo) => "toggleCicloActivo('{$ciclo->id}', " . ($ciclo->activo ? 'false' : 'true') . ")", 'title' => fn ($ciclo) => $ciclo->activo ? 'Desactivar' : 'Activar', 'icon' => fn ($ciclo) => 'bi bi-' . ($ciclo->activo ? 'pause' : 'play')],
     ];
+    if (auth()->user()->canAccessModule('academia.ciclos', 'update')) {
+        $actions[] = ['type' => 'link', 'url' => fn ($ciclo) => route('academia.ciclos.edit', $ciclo), 'style' => 'secondary', 'title' => 'Editar', 'icon' => 'bi bi-pencil'];
+    }
+    if (auth()->user()->canAccessModule('academia.ciclos', 'activo')) {
+        $actions[] = ['type' => 'button', 'style' => fn ($ciclo) => $ciclo->activo ? 'warning' : 'success', 'onclick' => fn ($ciclo) => "toggleCicloActivo('{$ciclo->id}', " . ($ciclo->activo ? 'false' : 'true') . ")", 'title' => fn ($ciclo) => $ciclo->activo ? 'Desactivar' : 'Activar', 'icon' => fn ($ciclo) => 'bi bi-' . ($ciclo->activo ? 'pause' : 'play')];
+    }
 @endphp
 
 <x-page-header title="Ciclos Escolares" subtitle="Administración del ciclo escolar activo y su catálogo." :hide-title="false">
     @slot('actions')
-        <a href="{{ route('academia.ciclos.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Ciclo
-        </a>
+        @if (auth()->user()->canAccessModule('academia.ciclos', 'create'))
+            <a href="{{ route('academia.ciclos.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo Ciclo
+            </a>
+        @endif
     @endslot
 </x-page-header>
 
@@ -45,6 +51,7 @@
     empty-message="No hay ciclos registrados"
 />
 
+@if (auth()->user()->canAccessModule('academia.ciclos', 'create'))
 {{-- Modal crear ciclo --}}
 <div class="modal fade" id="modalCrearCiclo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -97,6 +104,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <script>
 function toggleCicloActivo(id, activo) {

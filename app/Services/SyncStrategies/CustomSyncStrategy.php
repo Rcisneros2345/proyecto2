@@ -23,7 +23,6 @@ class CustomSyncStrategy implements SyncStrategyInterface
         'CFGSESIONES' => 'catalog',
         'CFGTIPOSEVALUACION' => 'catalog',
         'EMPLEADOS_CONTRATOS_CAT' => 'catalog',
-        'ALUMNOS' => 'catalog',
         'PROFESORES' => 'catalog',
         'EMPLEADOS' => 'catalog',
 
@@ -43,6 +42,7 @@ class CustomSyncStrategy implements SyncStrategyInterface
         'CURSOS_DET' => 'cycle',
 
         // Alumnos (CycleDirectSync fase 2) - REQUIEREN ciclo para obtener IDs
+        'ALUMNOS' => 'alumnos',
         'ALUMNOS_NIVELES' => 'alumnos',
 
         // ALUMNOS_KARDEX se excluyó del sync — no se sincroniza

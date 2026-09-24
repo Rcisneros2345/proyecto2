@@ -6,7 +6,7 @@
 @section('content')
 <x-page-header title="Empleados" subtitle="Consulta, administración y estado de los empleados en la red biométrica." :hide-title="false">
     @slot('actions')
-        @if(auth()->user()->isAdmin())
+        @if(auth()->user()->canAccessModule('dispositivos', 'view'))
             <a href="{{ route('employees.sobrantes') }}" class="btn btn-outline-secondary btn-sm" title="Ver sobrantes en dispositivos" aria-label="Ver sobrantes">
                 <i class="bi bi-exclamation-triangle me-1"></i> Sobrantes
             </a>
@@ -172,7 +172,7 @@
             </span>
         @endif
     </div>
-    @if(auth()->user()->isAdmin())
+    @if(auth()->user()->canAccessModule('empleados', 'create'))
         <a href="{{ route('employees.create') }}" class="btn btn-primary btn-sm" title="Agregar nuevo empleado" aria-label="Agregar empleado">
             <i class="bi bi-plus-lg me-1"></i> Agregar empleado
         </a>
@@ -408,7 +408,7 @@
                             {{-- H — Acciones --}}
                             <td data-label="">
                                 <div class="table-row-actions justify-content-end">
-                                    @if(auth()->user()->isAdmin())
+                                    @if(auth()->user()->canAccessModule('empleados', 'update'))
                                         <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-ghost"
                                            title="Editar empleado" aria-label="Editar {{ $employee->name }}">
                                             <i class="bi bi-pencil"></i>
@@ -468,7 +468,7 @@
                                     'icon'     => 'bi-people',
                                     'title'    => 'No hay empleados',
                                     'desc'     => 'Vacía los checadores con «Traer usuarios» o sincroniza Firebird EMPLEADOS para poblar el catálogo.',
-                                    'cta'      => auth()->user()->isAdmin()
+                                    'cta'      => auth()->user()->canAccessModule('empleados', 'create')
                                         ? ['label' => 'Agregar empleado', 'url' => route('employees.create')]
                                         : null,
                                     'ctaLink'  => true,

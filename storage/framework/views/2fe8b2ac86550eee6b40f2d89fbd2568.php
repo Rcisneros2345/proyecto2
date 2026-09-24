@@ -213,8 +213,8 @@
       ['label' => 'Horarios',   'icon' => 'bi-calendar-week',  'color' => 'orange',  'ciclo' => $kpis['horarios'],                                   'total' => $totales['horarios'] ?? null,       'href' => route('academia.horarios.clase', ['ciclo_principal' => $ciclo->label]),    'desc' => 'Clases y asistencia'],
       ['label' => 'Kardex',     'icon' => 'bi-file-earmark-text','color' => 'pink',   'ciclo' => $kpis['kardex'] ?? 0,                                'total' => $totales['kardex'] ?? null,         'href' => route('academia.kardex.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Evaluaciones del ciclo'],
       ['label' => 'Cursos',     'icon' => 'bi-book',            'color' => 'teal',    'ciclo' => $kpis['cursos'],                                     'total' => $totales['cursos'] ?? null,         'href' => route('academia.cursos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Oferta por ciclo'],
-      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias_ciclo'] ?? null,                     'total' => $totales['materias'] ?? null,        'href' => route('academia.planes.index'),                                            'desc' => 'Catalogo global'],
-      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => null,                                                'total' => $totales['planes'] ?? null,         'href' => route('academia.planes.index'),                                            'desc' => 'Planes de estudio'],
+      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias'],                                    'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Materias del ciclo'],
+      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => $kpis['planes'],                                      'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Planes del ciclo'],
     ];
   ?>
 
@@ -227,7 +227,7 @@
           <div class="flex-grow-1 min-w-0">
             <div class="fw-bold" style="font-size:13px"><?php echo e($m['label']); ?></div>
             <div class="d-flex align-items-baseline gap-2">
-              <span class="fw-bold" style="font-family:'JetBrains Mono',monospace;font-size:22px" data-mod-ciclo="<?php echo e($m['label']); ?>"><?php echo e($m['ciclo'] !== null ? $m['ciclo'] : '&mdash;'); ?></span>
+              <span class="fw-bold" style="font-family:'JetBrains Mono',monospace;font-size:22px" data-mod-ciclo="<?php echo e($m['label']); ?>"><?php echo e($m['ciclo'] !== null ? $m['ciclo'] : '—'); ?></span>
               <?php if($m['ciclo'] !== null): ?>
                 <span class="small text-tertiary-token">en este ciclo</span>
               <?php endif; ?>
@@ -261,25 +261,25 @@
 <section class="mb-4" aria-labelledby="desglose-heading">
   <div class="section-heading"><h2 id="desglose-heading" class="h6 fw-bold mb-0">Desglose operativo</h2><span class="small text-tertiary-token">Distribución del ciclo seleccionado</span></div>
   <div class="row g-3">
-    <div class="col-lg-7"><div class="card h-100"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-bold">Alumnos por grado, modalidad y sede</span><span class="badge bg-primary-subtle text-primary"><?php echo e(number_format($kpis['alumnos'])); ?></span></div><div class="table-responsive"><table class="table table-sm mb-0 align-middle"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
+    <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['alumnosPorGrupo']->count())); ?> combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary"><?php echo e(number_format($kpis['alumnos'])); ?></span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
       <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['alumnosPorGrupo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
         <tr><td><?php echo e($row->grado); ?></td><td><?php echo e($row->tipo_grupo ?: 'Sin definir'); ?></td><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end fw-semibold"><?php echo e(number_format($row->alumnos)); ?></td></tr>
       <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
         <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
       <?php endif; ?>
-      </tbody></table></div></div></div>
-    <div class="col-lg-5"><div class="card h-100"><div class="card-header"><span class="fw-bold">Cursos por sede</span></div><div class="table-responsive"><table class="table table-sm mb-0 align-middle"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
+      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
+    <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
       <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['cursosPorSede']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
         <tr><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->cursos); ?></td><td class="text-end"><?php echo e($row->planes); ?></td><td class="text-end"><?php echo e($row->materias); ?></td></tr>
       <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
         <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
       <?php endif; ?>
-      </tbody></table></div></div></div>
+      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
   </div>
 </section>
 
 <section class="row g-3 mb-4" aria-label="Profesores y horas de clase">
-  <div class="col-lg-5"><div class="card h-100"><div class="card-header"><span class="fw-bold">Profesores PA y PTC</span></div><div class="table-responsive"><table class="table table-sm mb-0 align-middle"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
+  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores PA y PTC</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
     <?php $__currentLoopData = $dashboardSummary['profesoresPorOrigen']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <?php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; $hours = $dashboardSummary['horasPorOrigen']->firstWhere('origen', $row->origen); ?>
       <tr><td><span class="badge <?php echo e($originLabel === 'PTC' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'); ?>"><?php echo e($originLabel); ?></span></td><td class="text-end"><?php echo e($row->profesores); ?></td><td class="text-end"><?php echo e($hours->clases ?? 0); ?></td><td class="text-end"><?php echo e($hours->horas ?? 0); ?></td></tr>
@@ -287,21 +287,21 @@
     </tbody></table></div>
     <?php if (! ($dashboardSummary['dataQuality']['hoursCaptured'])): ?><div class="card-footer small text-warning"><i class="bi bi-info-circle me-1"></i>La fuente no trae horas capturadas; se muestran las clases registradas.</div><?php endif; ?>
   </div></div>
-  <div class="col-lg-7"><div class="card h-100"><div class="card-header"><span class="fw-bold">Cursos por profesor PA/PTC</span></div><div class="table-responsive" style="max-height:320px"><table class="table table-sm mb-0 align-middle"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
+  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor PA/PTC</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['cursosPorOrigen']->count())); ?> cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
     <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['cursosPorOrigen']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
       <?php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; ?>
       <tr><td><?php echo e($row->nombre_curso ?: $row->clave_curso); ?></td><td><?php echo e($originLabel); ?></td><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->sesiones); ?></td></tr>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
       <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos registrados</td></tr>
     <?php endif; ?>
-    </tbody></table></div></div></div>
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-origin"></div></div></div>
 </section>
 
 <section class="row g-3 mb-4" aria-label="Catálogos académicos">
-  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><span class="fw-bold">Niveles educativos</span></div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Nivel</th><th class="text-end">Grupos</th></tr></thead><tbody>
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Niveles educativos</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['niveles']->count())); ?> niveles</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="education-levels" title="Exportar niveles"><i class="bi bi-download"></i><span class="visually-hidden">Exportar niveles</span></button></div><div class="table-responsive"><table id="education-levels" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-educativos"><thead><tr><th>Nivel</th><th class="text-end">Grupos</th></tr></thead><tbody>
     <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['niveles']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr><td><?php echo e($row->nivel ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->grupos); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin niveles</td></tr><?php endif; ?>
     </tbody></table></div></div></div>
-  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><span class="fw-bold">Turnos</span></div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Turno</th><th class="text-end">Grupos</th></tr></thead><tbody>
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Turnos</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['turnos']->count())); ?> turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="shifts" title="Exportar turnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar turnos</span></button></div><div class="table-responsive"><table id="shifts" class="table table-sm dashboard-data-table" data-export-name="turnos"><thead><tr><th>Turno</th><th class="text-end">Grupos</th></tr></thead><tbody>
     <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['turnos']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr><td><?php echo e($row->turno ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->grupos); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin turnos</td></tr><?php endif; ?>
     </tbody></table></div></div></div>
 </section>
@@ -562,4 +562,46 @@
 </script>
 <?php $__env->stopPush(); ?>
 
-<?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\proyecto2\resources\views\academia\dashboard\index.blade.php ENDPATH**/ ?>
+<?php $__env->startPush('scripts'); ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const pageSize = 20;
+
+  document.querySelectorAll('.dashboard-data-table').forEach(function (table) {
+    const rows = Array.from(table.tBodies[0]?.rows || []);
+    const pager = document.querySelector('[data-pagination-for="' + table.id + '"]');
+    if (!pager || rows.length <= pageSize || rows.some(row => row.querySelector('[colspan]'))) return;
+    let page = 1;
+    const pages = Math.ceil(rows.length / pageSize);
+
+    const render = function () {
+      rows.forEach((row, index) => {
+        row.hidden = index < (page - 1) * pageSize || index >= page * pageSize;
+      });
+      pager.innerHTML = '<span class="dashboard-table-page-info">Página ' + page + ' de ' + pages + ' · ' + rows.length + ' registros</span>'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" data-page-prev ' + (page === 1 ? 'disabled' : '') + ' aria-label="Página anterior"><i class="bi bi-chevron-left"></i></button>'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" data-page-next ' + (page === pages ? 'disabled' : '') + ' aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></button>';
+      pager.querySelector('[data-page-prev]').onclick = function () { if (page > 1) { page--; render(); } };
+      pager.querySelector('[data-page-next]').onclick = function () { if (page < pages) { page++; render(); } };
+    };
+    render();
+  });
+
+  document.querySelectorAll('.js-export-table').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const table = document.getElementById(button.dataset.tableTarget);
+      if (!table) return;
+      const csv = Array.from(table.rows).map(row => Array.from(row.cells).map(cell => '"' + cell.innerText.replace(/"/g, '""').replace(/\s+/g, ' ').trim() + '"').join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = (table.dataset.exportName || table.id) + '.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  });
+});
+</script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\proyecto2\resources\views/academia/dashboard/index.blade.php ENDPATH**/ ?>

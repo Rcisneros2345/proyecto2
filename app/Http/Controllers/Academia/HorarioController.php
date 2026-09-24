@@ -51,21 +51,46 @@ class HorarioController extends Controller
         $turnos = \App\Models\Academia\Turno::activo()->get();
         $sedes = Sede::activo()->orderBy('descripcion')->get();
         $edificios = collect();
+        $scopeAllowed = true;
 
         if (! $request->user()->isAdmin()) {
-            $assignments = $this->captureAuthorization->assignmentsFor($request->user());
+            $assignments = $this->captureAuthorization->assignmentsForCycle(
+                $request->user(),
+                $ciclo->inicial,
+                $ciclo->final,
+                $ciclo->periodo,
+            );
             $niveles = $niveles->filter(fn ($item) => $assignments->contains(fn ($assignment) => $assignment->nivel === null || $assignment->nivel === $item->nivel))->values();
             $sedes = $sedes->filter(fn ($item) => $assignments->contains(fn ($assignment) => $assignment->id_campus === null || (string) $assignment->id_campus === (string) $item->id_campus))->values();
+            if ($sede === null && $sedes->count() === 1) {
+                $sede = (string) $sedes->first()->id_campus;
+            }
+            $scopeAllowed = $nivel !== null && $this->captureAuthorization->canCaptureFilter(
+                $request->user(),
+                (string) $nivel,
+                $sede !== null ? (string) $sede : null,
+                $ciclo->inicial,
+                $ciclo->final,
+                $ciclo->periodo,
+            );
         }
 
-        if ($nivel && $turno) {
+        if ($nivel && $turno && $scopeAllowed) {
             $edificios = HorarioDet::query()
                 ->where('horarios_det.inicial', $ciclo->inicial)
                 ->where('horarios_det.final', $ciclo->final)
                 ->where('horarios_det.periodo', $ciclo->periodo)
                 ->where('horarios_det.activo', true)
                 ->whereNotNull('horarios_det.edificio')
-                ->when($sede, fn ($query) => $query->where('horarios_det.id_campus', $sede))
+                ->when($sede, function ($query) use ($sede): void {
+                    $query->where(function ($scope) use ($sede): void {
+                        $scope->where('horarios_det.id_campus', $sede)
+                            ->orWhere(function ($fallback) use ($sede): void {
+                                $fallback->whereNull('horarios_det.id_campus')
+                                    ->where('g.id_campus', $sede);
+                            });
+                    });
+                })
                 ->join('grupos as g', function ($join) {
                     $join->on('horarios_det.codigo_grupo', '=', 'g.codigo_grupo')
                         ->on('horarios_det.inicial', '=', 'g.inicial')
@@ -82,7 +107,7 @@ class HorarioController extends Controller
         $horarios = [];
         $stats = ['total_clases' => 0, 'capturadas' => 0, 'presentes' => 0, 'ausentes' => 0, 'retardos' => 0, 'justificados' => 0];
 
-        if ($nivel && $turno) {
+        if ($nivel && $turno && $scopeAllowed) {
             $horarios = $this->horarioResolver->getClaseAsistenciaGrid(
                 $ciclo->inicial, $ciclo->final, $ciclo->periodo,
                 $nivel, $turno, $dia, $fecha, $sede, $edificio

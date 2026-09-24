@@ -82,12 +82,13 @@
                         <th>Salida</th>
                         <th>Tipo de empleado</th>
                         <th>Puesto / área</th>
+                        <th>Incidencias</th>
                         <th>Dispositivo</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($attendances as $attendance)
-                        <tr>
+                        <tr class="attendance-row {{ $attendance->incidencias->contains(fn ($incidencia) => $incidencia->estado === 'aprobada') ? 'attendance-row--approved' : '' }}">
                             <td data-label="Fecha">
                                 <span class="mono text-secondary-token" style="font-size:12px">{{ \Carbon\Carbon::parse($attendance->date)->locale('es')->isoFormat('D MMM YYYY') }}</span>
                             </td>
@@ -134,21 +135,27 @@
                             </td>
                             <td data-label="Llegada">
                                 @forelse($attendance->llegada_resumen as $punch)
-                                    <div class="small"><span class="fw-semibold">{{ $punch['label'] }}:</span> {{ $punch['time'] }}</div>
+                                    <div class="attendance-punch attendance-punch--in">
+                                        <span class="attendance-punch__label"><i class="bi bi-box-arrow-in-right"></i>{{ $punch['label'] }}:</span>
+                                        <strong>{{ $punch['time'] }}</strong>
+                                    </div>
                                 @empty
-                                    <span class="text-muted">Sin entrada</span>
+                                    <span class="attendance-empty">Sin entrada</span>
                                 @endforelse
-                                <div class="small mt-1 {{ str_contains($attendance->observacion_llegada, 'tarde') ? 'text-danger' : (str_contains($attendance->observacion_llegada, 'temprano') ? 'text-success' : 'text-muted') }}">
+                                <div class="attendance-deviation {{ str_contains($attendance->observacion_llegada, 'tarde') ? 'attendance-deviation--late' : (str_contains($attendance->observacion_llegada, 'temprano') ? 'attendance-deviation--early' : '') }}">
                                     {{ $attendance->observacion_llegada }}
                                 </div>
                             </td>
                             <td data-label="Salida">
                                 @forelse($attendance->salida_resumen as $punch)
-                                    <div class="small"><span class="fw-semibold">{{ $punch['label'] }}:</span> {{ $punch['time'] }}</div>
+                                    <div class="attendance-punch attendance-punch--out">
+                                        <span class="attendance-punch__label"><i class="bi bi-box-arrow-right"></i>{{ $punch['label'] }}:</span>
+                                        <strong>{{ $punch['time'] }}</strong>
+                                    </div>
                                 @empty
-                                    <span class="text-muted">Sin salida</span>
+                                    <span class="attendance-empty">Sin salida</span>
                                 @endforelse
-                                <div class="small mt-1 {{ str_contains($attendance->observacion_salida, 'temprano') ? 'text-warning' : (str_contains($attendance->observacion_salida, 'tarde') ? 'text-info' : 'text-muted') }}">
+                                <div class="attendance-deviation {{ str_contains($attendance->observacion_salida, 'temprano') ? 'attendance-deviation--late' : (str_contains($attendance->observacion_salida, 'tarde') ? 'attendance-deviation--early' : '') }}">
                                     {{ $attendance->observacion_salida }}
                                 </div>
                             </td>
@@ -162,6 +169,20 @@
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
+                            </td>
+                            <td data-label="Incidencias">
+                                @forelse ($attendance->incidencias as $incidencia)
+                                    @php
+                                        $incidenciaEstado = ucfirst($incidencia->estado);
+                                    @endphp
+                                    <div class="mb-1">
+                                        <span class="attendance-incident-status attendance-incident-status--{{ $incidencia->estado }}">{{ $incidenciaEstado }}</span>
+                                        <span class="attendance-incident-title">{{ $incidencia->asunto }}</span>
+                                    </div>
+                                    <div class="small text-muted">{{ $incidencia->tipo_justificacion }}</div>
+                                @empty
+                                    <span class="text-muted">Sin incidencia</span>
+                                @endforelse
                             </td>
                             <td data-label="Dispositivo">
                                 {{ $attendance->device_names->join(', ') ?: '—' }}
@@ -181,7 +202,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10">
+                            <td colspan="11">
                                 @include('partials.empty-state', [
                                     'icon'     => request('type') || request('from') || request('to') || request('device_id')
                                         ? 'bi-search'

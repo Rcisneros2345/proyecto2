@@ -9,10 +9,9 @@ use App\Http\Requests\CursoFormRequest;
 use App\Models\Academia\Alumno;
 use App\Models\Academia\Curso;
 use App\Models\Academia\CursoDet;
-use App\Models\Academia\Materia;
 use App\Models\Academia\Sede;
-use App\Services\CicloActualService;
 use App\Services\AttendanceCaptureAuthorization;
+use App\Services\CicloActualService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,18 +28,69 @@ class CursoController extends Controller
     public function index(Request $request): View
     {
         $ciclo = $this->cicloService->resolve($request);
+        $assignments = collect();
 
         $cursoQuery = Curso::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo);
-        $this->captureAuthorization->restrictLevelCampusQuery($cursoQuery, $request->user(), $ciclo, 'cursos.nivel', 'cursos.id_campus');
+        if (! $request->user()->isAdmin()) {
+            $assignments = $this->captureAuthorization->assignmentsForCycle(
+                $request->user(),
+                $ciclo->inicial,
+                $ciclo->final,
+                $ciclo->periodo,
+            );
+
+            $cursoQuery->where(function ($scope) use ($assignments): void {
+                foreach ($assignments as $assignment) {
+                    $scope->orWhere(function ($match) use ($assignment): void {
+                        $match->where(function ($direct) use ($assignment): void {
+                            if ($assignment->nivel !== null) {
+                                $direct->where(function ($level) use ($assignment): void {
+                                    $level->where('cursos.nivel', $assignment->nivel)
+                                        ->orWhereNull('cursos.nivel');
+                                });
+                            }
+                            if ($assignment->id_campus !== null) {
+                                $direct->where('cursos.id_campus', $assignment->id_campus);
+                            }
+                        });
+
+                        $match->orWhereExists(function ($schedule) use ($assignment): void {
+                            $schedule->selectRaw('1')
+                                ->from('horarios_det as h')
+                                ->join('grupos as g', function ($join): void {
+                                    $join->on('h.codigo_grupo', '=', 'g.codigo_grupo')
+                                        ->on('h.inicial', '=', 'g.inicial')
+                                        ->on('h.final', '=', 'g.final')
+                                        ->on('h.periodo', '=', 'g.periodo');
+                                })
+                                ->whereColumn('h.clave_asignatura', 'cursos.clave_asignatura')
+                                ->where('h.activo', true);
+                            if ($assignment->nivel !== null) {
+                                $schedule->where('g.nivel', $assignment->nivel);
+                            }
+                            if ($assignment->id_campus !== null) {
+                                $schedule->where(function ($campus) use ($assignment): void {
+                                    $campus->where('h.id_campus', $assignment->id_campus)
+                                        ->orWhere(function ($fallback) use ($assignment): void {
+                                            $fallback->whereNull('h.id_campus')
+                                                ->where('g.id_campus', $assignment->id_campus);
+                                        });
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+        }
 
         $cursos = $cursoQuery
             ->activo()
             ->with(['sede', 'nivelRel', 'plan.nivelRel', 'materia', 'profesor', 'materias.materia'])
             ->withCount('materias')
             ->orderBy('clave_curso')
-            ->paginate((int) $request->query('per_page', 25));
+            ->paginate((int) $request->query('per_page', '25'));
 
-        $cursos->each(function (Curso $curso): void {
+        foreach ($cursos as $curso) {
             $materia = $curso->materia ?? $curso->materias->first()?->materia;
             $curso->setAttribute('docentes', $materia ? DB::table('horarios_det as h')
                 ->join('profesores as p', 'p.clave_profesor', '=', 'h.clave_profesor')
@@ -82,7 +132,7 @@ class CursoController extends Controller
                 ->when($curso->codigo_grupo, fn ($query) => $query->where('ag.codigo_grupo', $curso->codigo_grupo))
                 ->distinct('ag.numero_alumno')
                 ->count('ag.numero_alumno') : 0));
-        });
+        }
 
         return view('academia.cursos.index', [
             'ciclo' => $ciclo,
@@ -201,6 +251,17 @@ class CursoController extends Controller
         $niveles = \App\Models\Academia\Nivel::activo()->get();
         $turnos = \App\Models\Academia\Turno::activo()->get();
 
+        if (! $request->user()->isAdmin()) {
+            $assignments = $this->captureAuthorization->assignmentsForCycle(
+                $request->user(),
+                $ciclo->inicial,
+                $ciclo->final,
+                $ciclo->periodo,
+            );
+            $niveles = $niveles->filter(fn ($nivel) => $assignments->contains(fn ($assignment) => $assignment->nivel === null || $assignment->nivel === $nivel->nivel))->values();
+            $sedes = $sedes->filter(fn ($sede) => $assignments->contains(fn ($assignment) => $assignment->id_campus === null || (string) $assignment->id_campus === (string) $sede->id_campus))->values();
+        }
+
         return view('academia.cursos.create', [
             'ciclo' => $ciclo,
             'sedes' => $sedes,
@@ -213,7 +274,18 @@ class CursoController extends Controller
     {
         $ciclo = $this->cicloService->resolve($request);
 
-        $request->validate((new CursoFormRequest)->rules(), (new CursoFormRequest)->messages());
+        $data = $request->validate((new CursoFormRequest)->rules(), (new CursoFormRequest)->messages());
+
+        if (! $request->user()->isAdmin() && ! $this->captureAuthorization->canCaptureFilter(
+            $request->user(),
+            $data['nivel'],
+            $data['id_campus'] ?? null,
+            $ciclo->inicial,
+            $ciclo->final,
+            $ciclo->periodo,
+        )) {
+            abort(403, 'El curso está fuera de tus niveles o sedes asignados.');
+        }
 
         Curso::create(array_merge($request->only([
             'clave_curso', 'nombre_curso', 'nivel', 'turno', 'id_campus',

@@ -33,9 +33,11 @@
 <?php $component = $__componentOriginal50f7720e882b68836720a7a50217df1d; ?>
 <?php unset($__componentOriginal50f7720e882b68836720a7a50217df1d); ?>
 <?php endif; ?>
-        <a href="<?php echo e(route('academia.planes.create')); ?>" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Plan
-        </a>
+        <?php if(auth()->user()->canAccessModule('academia.planes', 'create')): ?>
+            <a href="<?php echo e(route('academia.planes.create')); ?>" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo Plan
+            </a>
+        <?php endif; ?>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
@@ -94,8 +96,10 @@
                     'icon' => 'bi-journal-bookmark',
                     'title' => 'No hay planes registrados',
                     'desc' => 'Cuando se creen planes de estudio aparecerán aquí con su nivel y materia asociada.',
-                    'cta' => ['label' => 'Crear plan', 'url' => route('academia.planes.create')],
-                    'ctaLink' => true,
+                    'cta' => auth()->user()->canAccessModule('academia.planes', 'create')
+                        ? ['label' => 'Crear plan', 'url' => route('academia.planes.create')]
+                        : null,
+                    'ctaLink' => auth()->user()->canAccessModule('academia.planes', 'create'),
                 ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
             </div>
         <?php else: ?>
@@ -143,13 +147,17 @@
                                         <a href="<?php echo e(route('academia.planes.show', $plan)); ?>" class="btn btn-outline-primary" title="Ver">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="<?php echo e(route('academia.planes.edit', $plan)); ?>" class="btn btn-outline-secondary" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form action="<?php echo e(route('academia.planes.destroy', $plan)); ?>" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este plan?')">
-                                            <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                                            <button type="submit" class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        <?php if(auth()->user()->canAccessModule('academia.planes', 'update')): ?>
+                                            <a href="<?php echo e(route('academia.planes.edit', $plan)); ?>" class="btn btn-outline-secondary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if(auth()->user()->canAccessModule('academia.planes', 'delete')): ?>
+                                            <form action="<?php echo e(route('academia.planes.destroy', $plan)); ?>" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este plan?')">
+                                                <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
+                                                <button type="submit" class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

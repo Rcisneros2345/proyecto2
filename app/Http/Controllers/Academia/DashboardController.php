@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Academia;
 
 use App\Http\Controllers\Controller;
-use App\Models\Academia\Alumno;
-use App\Models\Academia\Ciclo;
-use App\Models\Academia\Curso;
-use App\Models\Academia\Grupo;
 use App\Models\Academia\HorarioDet;
+use App\Services\AcademiaDashboardService;
 use App\Services\CicloActualService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,21 +14,16 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected CicloActualService $cicloService
+        protected CicloActualService $cicloService,
+        protected AcademiaDashboardService $dashboardService,
     ) {}
 
     public function index(Request $request): View
     {
         $ciclo = $this->cicloService->resolve($request);
+        $summary = $this->dashboardService->build($ciclo);
 
-        // KPIs del ciclo
-        $kpis = [
-            'grupos' => Grupo::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->activo()->count(),
-            'alumnos' => Alumno::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->activo()->count(),
-            'profesores' => \App\Models\Academia\Profesor::activo()->count(),
-            'horarios' => HorarioDet::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->activo()->count(),
-            'cursos' => Curso::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)->activo()->count(),
-        ];
+        $kpis = $summary['kpis'];
 
         // Horarios por día (para gráfico)
         $horariosPorDia = \App\Models\Academia\HorarioDet::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
@@ -55,9 +47,9 @@ class DashboardController extends Controller
         return view('academia.dashboard.index', [
             'ciclo' => $ciclo,
             'kpis' => $kpis,
+            'dashboardSummary' => $summary,
             'horariosPorDia' => $horariosPorDia,
             'porOrigen' => $porOrigen,
-            'ciclos' => $this->cicloService->getAllForSelector(),
         ]);
     }
 }

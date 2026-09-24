@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Academia\AttendanceCaptureAssignment;
+use App\Models\Academia\Ciclo;
 use App\Models\Academia\Grupo;
 use App\Models\Academia\HorarioDet;
-use App\Models\Academia\Ciclo;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -134,7 +134,7 @@ class AttendanceCaptureAuthorization
     }
 
     /** @return Collection<int, AttendanceCaptureAssignment> */
-    private function assignmentsForCycle(User $user, int $inicial, int $final, int $periodo): Collection
+    public function assignmentsForCycle(User $user, int $inicial, int $final, int $periodo): Collection
     {
         return $this->assignmentsFor($user)->filter(fn (AttendanceCaptureAssignment $assignment): bool => ($assignment->inicial === null || $assignment->inicial === $inicial)
             && ($assignment->final === null || $assignment->final === $final)

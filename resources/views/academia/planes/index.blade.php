@@ -11,9 +11,11 @@
             :ciclos="\App\Models\Academia\Ciclo::orderByDesc('inicial')->orderByDesc('final')->orderByDesc('periodo')->get()"
             :showBadge="false"
         />
-        <a href="{{ route('academia.planes.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo Plan
-        </a>
+        @if (auth()->user()->canAccessModule('academia.planes', 'create'))
+            <a href="{{ route('academia.planes.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo Plan
+            </a>
+        @endif
     @endslot
 </x-page-header>
 
@@ -45,8 +47,10 @@
                     'icon' => 'bi-journal-bookmark',
                     'title' => 'No hay planes registrados',
                     'desc' => 'Cuando se creen planes de estudio aparecerán aquí con su nivel y materia asociada.',
-                    'cta' => ['label' => 'Crear plan', 'url' => route('academia.planes.create')],
-                    'ctaLink' => true,
+                    'cta' => auth()->user()->canAccessModule('academia.planes', 'create')
+                        ? ['label' => 'Crear plan', 'url' => route('academia.planes.create')]
+                        : null,
+                    'ctaLink' => auth()->user()->canAccessModule('academia.planes', 'create'),
                 ])
             </div>
         @else
@@ -92,13 +96,17 @@
                                         <a href="{{ route('academia.planes.show', $plan) }}" class="btn btn-outline-primary" title="Ver">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('academia.planes.edit', $plan) }}" class="btn btn-outline-secondary" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form action="{{ route('academia.planes.destroy', $plan) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este plan?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        @if (auth()->user()->canAccessModule('academia.planes', 'update'))
+                                            <a href="{{ route('academia.planes.edit', $plan) }}" class="btn btn-outline-secondary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        @endif
+                                        @if (auth()->user()->canAccessModule('academia.planes', 'delete'))
+                                            <form action="{{ route('academia.planes.destroy', $plan) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este plan?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

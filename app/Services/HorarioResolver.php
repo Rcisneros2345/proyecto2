@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Academia\DocenteAsistencia;
-use App\Models\Academia\Grupo;
 use App\Models\Academia\HorarioDet;
-use App\Models\Academia\Profesor;
 use App\Models\Academia\SesionBase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +43,15 @@ class HorarioResolver
             ->whereRaw('UPPER(grupos.turno) LIKE ?', [strtoupper(substr($turno, 0, 1)).'%'])
             ->where('horarios_det.dia', $dia)
             ->where('horarios_det.activo', true)
-            ->when($sede, fn ($query) => $query->where('horarios_det.id_campus', $sede))
+            ->when($sede, function ($query) use ($sede): void {
+                $query->where(function ($scope) use ($sede): void {
+                    $scope->where('horarios_det.id_campus', $sede)
+                        ->orWhere(function ($fallback) use ($sede): void {
+                            $fallback->whereNull('horarios_det.id_campus')
+                                ->where('grupos.id_campus', $sede);
+                        });
+                });
+            })
             ->when($edificio, fn ($query) => $query->where('horarios_det.edificio', $edificio))
             ->orderBy('horarios_det.id_campus')
             ->orderBy('horarios_det.edificio')
@@ -67,7 +73,8 @@ class HorarioResolver
             $grupo = $h->getGrupoCompletoAttribute();
             $profesor = $h->profesor;
             $materia = $h->materia;
-            $sede = $h->sede;
+            $campus = $h->id_campus ?? $grupo?->id_campus;
+            $sede = $h->sede ?? $grupo?->sede;
             $sesionBase = $h->sesionBase;
             $asistencia = DocenteAsistencia::where('codigo_grupo', $h->codigo_grupo)
                 ->where('clave_profesor', $h->clave_profesor)
@@ -90,7 +97,7 @@ class HorarioResolver
                 'CLAVEASIGNATURA' => $h->clave_asignatura,
                 'DIA' => $h->dia,
                 'SESION' => $h->sesion,
-                'ID_CAMPUS' => $h->id_campus,
+                'ID_CAMPUS' => $campus,
                 'SEDE_NOMBRE' => $sede?->descripcion,
                 'EDIFICIO' => $h->edificio,
                 'AULA' => $h->aula,
@@ -160,7 +167,15 @@ class HorarioResolver
             ->whereRaw('UPPER(g.turno) LIKE ?', [strtoupper(substr($turno, 0, 1)).'%'])
             ->where('h.dia', $dia)
             ->where('h.activo', true)
-            ->when($sede, fn ($query) => $query->where('h.id_campus', $sede))
+            ->when($sede, function ($query) use ($sede): void {
+                $query->where(function ($scope) use ($sede): void {
+                    $scope->where('h.id_campus', $sede)
+                        ->orWhere(function ($fallback) use ($sede): void {
+                            $fallback->whereNull('h.id_campus')
+                                ->where('g.id_campus', $sede);
+                        });
+                });
+            })
             ->when($edificio, fn ($query) => $query->where('h.edificio', $edificio))
             ->selectRaw('
                 COUNT(*) as total_clases,

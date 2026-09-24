@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\HorarioLaboral;
+use App\Models\Incidencia;
 use App\Services\AttendanceObservationService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,15 +53,29 @@ class AttendanceController extends Controller
         });
 
         // Precargar horarios laborales para los empleados en el rango
-        $employeeIds = $rawAttendances->pluck('employee_id')->filter()->unique();
+        $incidencias = Incidencia::query()
+            ->with(['empleado.area', 'empleado.puesto', 'empleado.sede'])
+            ->whereNotNull('empleado_id')
+            ->when($request->filled('from'), fn ($query) => $query->whereDate('fecha_falta_programada', '>=', $request->query('from')))
+            ->when($request->filled('to'), fn ($query) => $query->whereDate('fecha_falta_programada', '<=', $request->query('to')))
+            ->get(['id', 'empleado_id', 'asunto', 'tipo_justificacion', 'estado', 'fecha_falta_programada', 'tipo_duracion', 'hora_inicio', 'hora_fin']);
+
+        $employeeIds = $rawAttendances->map(fn (Attendance $attendance) => $attendance->employee?->id ?? $attendance->employee_id)
+            ->merge($incidencias->pluck('empleado_id'))
+            ->filter()
+            ->unique()
+            ->values();
         $horariosMap = HorarioLaboral::whereIn('employee_id', $employeeIds)
             ->where('activo', true)
             ->get()
             ->groupBy('employee_id');
 
+        $incidenciasMap = $incidencias
+            ->groupBy(fn (Incidencia $incidencia): string => $incidencia->empleado_id.':'.optional($incidencia->fecha_falta_programada)->format('Y-m-d'));
+
         $dailyRows = $rawAttendances
             ->groupBy(fn (Attendance $attendance) => ($attendance->employee?->id ?? 'user-'.$attendance->user_id).':'.$attendance->recorded_at->toDateString())
-            ->map(function ($records) use ($horariosMap) {
+            ->map(function ($records) use ($horariosMap, $incidenciasMap) {
                 $first = $records->first();
                 $punches = $records->groupBy(fn (Attendance $attendance) => $attendance->punchStatus())
                     ->map(fn ($items) => $items->sortBy('recorded_at')->first());
@@ -74,6 +89,7 @@ class AttendanceController extends Controller
                 $horaSalidaBase = $horario?->hora_salida?->format('H:i') ?? '17:00';
                 $entrada = $punches->get(0);
                 $salida = $punches->get(1);
+                $incidencias = $incidenciasMap->get($first->employee_id.':'.$first->recorded_at->toDateString(), collect());
 
                 return (object) [
                     'date' => $first->recorded_at->toDateString(),
@@ -91,9 +107,48 @@ class AttendanceController extends Controller
                     'horario_entrada_base' => $horaEntradaBase,
                     'horario_salida_base' => $horaSalidaBase,
                     'tiene_horario' => $horario !== null,
+                    'incidencias' => $incidencias,
                 ];
             })
             ->sortByDesc(fn ($row) => $row->date.' '.($row->employee?->name ?? $row->user_id));
+
+        foreach ($incidenciasMap as $key => $incidenciasDelDia) {
+            if ($dailyRows->has($key)) {
+                continue;
+            }
+
+            $incidencia = $incidenciasDelDia->first();
+            $employee = $incidencia->empleado;
+            if (! $employee || ! $incidencia->fecha_falta_programada) {
+                continue;
+            }
+
+            $horario = $horariosMap->get($employee->id, collect())
+                ->firstWhere('dia_semana', $incidencia->fecha_falta_programada->dayOfWeekIso);
+            $horaEntradaBase = $horario?->hora_entrada?->format('H:i') ?? '08:00';
+            $horaSalidaBase = $horario?->hora_salida?->format('H:i') ?? '17:00';
+
+            $dailyRows->put($key, (object) [
+                'date' => $incidencia->fecha_falta_programada->toDateString(),
+                'id' => 'incidencia-'.$incidencia->id,
+                'employee' => $employee,
+                'user_id' => $employee->user_id,
+                'device_names' => collect(),
+                'punches' => collect(),
+                'latest_observation' => null,
+                'observation_attendance_id' => null,
+                'llegada_resumen' => [],
+                'salida_resumen' => [],
+                'observacion_llegada' => 'Sin checada',
+                'observacion_salida' => 'Sin checada',
+                'horario_entrada_base' => $horaEntradaBase,
+                'horario_salida_base' => $horaSalidaBase,
+                'tiene_horario' => $horario !== null,
+                'incidencias' => $incidenciasDelDia,
+            ]);
+        }
+
+        $dailyRows = $dailyRows->sortByDesc(fn ($row) => $row->date.' '.($row->employee?->name ?? $row->user_id));
 
         $page = LengthAwarePaginator::resolveCurrentPage('employee_page');
         $perPage = min(max((int) $request->query('per_page', 25), 10), 100);

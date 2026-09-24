@@ -36,7 +36,7 @@
                 <label class="form-label">Nivel <span class="text-danger">*</span></label>
                 <select name="nivel" class="form-select" required>
                     <option value="">-- Seleccionar --</option>
-                    <?php $__currentLoopData = \App\Models\Academia\Nivel::activo()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $n): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = $niveles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $n): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <option value="<?php echo e($n->nivel); ?>" <?php echo e($filtros['nivel'] == $n->nivel ? 'selected' : ''); ?>><?php echo e($n->descripcion); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
@@ -45,7 +45,7 @@
                 <label class="form-label">Turno <span class="text-danger">*</span></label>
                 <select name="turno" class="form-select" required>
                     <option value="">-- Seleccionar --</option>
-                    <?php $__currentLoopData = \App\Models\Academia\Turno::activo()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = $turnos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <option value="<?php echo e($t->turno); ?>" <?php echo e($filtros['turno'] == $t->turno ? 'selected' : ''); ?>><?php echo e($t->descripcion); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
@@ -53,7 +53,9 @@
             <div class="col-md-2">
                 <label class="form-label">Sede</label>
                 <select name="sede" class="form-select">
-                    <option value="">Todas</option>
+                    <?php if(auth()->user()->isAdmin()): ?>
+                        <option value="">Todas</option>
+                    <?php endif; ?>
                     <?php $__currentLoopData = $sedes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sede): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <option value="<?php echo e($sede->id_campus); ?>" <?php echo e($filtros['sede'] == $sede->id_campus ? 'selected' : ''); ?>><?php echo e($sede->descripcion); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

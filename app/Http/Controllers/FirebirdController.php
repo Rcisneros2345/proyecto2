@@ -63,8 +63,6 @@ class FirebirdController extends Controller
                 'Sesiones por Grupo' => [
                     ['fb' => 'CFGSESIONES', 'mysql' => 'sesiones_base', 'recommended' => true],
                 ],
-            ],
-            'alumnos' => [
                 'Datos de Alumnos' => [
                     ['fb' => 'ALUMNOS', 'mysql' => 'alumnos', 'recommended' => true],
                     ['fb' => 'ALUMNOS_NIVELES', 'mysql' => 'alumnos_niveles', 'recommended' => true],

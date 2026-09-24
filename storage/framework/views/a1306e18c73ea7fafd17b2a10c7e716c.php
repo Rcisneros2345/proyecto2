@@ -16,9 +16,11 @@
         <a href="<?php echo e(route('academia.ciclos.index')); ?>" class="btn btn-outline-secondary">
             <i class="bi bi-calendar me-1"></i> Cambiar ciclo
         </a>
-        <a href="<?php echo e(route('academia.cursos.create')); ?>" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nuevo curso
-        </a>
+        <?php if(auth()->user()->canAccessModule('academia.cursos', 'create')): ?>
+            <a href="<?php echo e(route('academia.cursos.create')); ?>" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo curso
+            </a>
+        <?php endif; ?>
     <?php $__env->endSlot(); ?>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
@@ -39,8 +41,10 @@
                     'icon' => 'bi-book',
                     'title' => 'No hay cursos registrados para este ciclo',
                     'desc' => 'Crea el primer curso para empezar a asignar docentes, materias y alumnos.',
-                    'cta' => ['label' => 'Crear curso', 'url' => route('academia.cursos.create')],
-                    'ctaLink' => true,
+                    'cta' => auth()->user()->canAccessModule('academia.cursos', 'create')
+                        ? ['label' => 'Crear curso', 'url' => route('academia.cursos.create')]
+                        : null,
+                    'ctaLink' => auth()->user()->canAccessModule('academia.cursos', 'create'),
                 ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
             </div>
         <?php else: ?>
@@ -52,6 +56,7 @@
                             <th>Descripción</th>
                             <th>Materia</th>
                             <th>Maestro(s)</th>
+                            <th>Horario propio</th>
                             <th>Nivel</th>
                             <th>Turno</th>
                             <th>Sede</th>
@@ -71,6 +76,23 @@
                                         <div><?php echo e($docente->nombre_completo ?: $docente->clave_profesor); ?></div>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                         <span class="text-muted">Sin maestro asignado</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="small">
+                                    <?php if($c->desde || $c->hasta || $c->sesiones): ?>
+                                        <div>
+                                            <?php echo e($c->desde?->format('d/m/Y') ?? 'Sin inicio'); ?>
+
+                                            al
+                                            <?php echo e($c->hasta?->format('d/m/Y') ?? 'Sin fin'); ?>
+
+                                        </div>
+                                        <div class="text-muted">
+                                            <?php echo e($c->sesiones ?? 0); ?> sesiones · <?php echo e($c->turno_nombre); ?>
+
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted">Sin horario propio</span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo e($c->nivelRel?->descripcion ?? $c->plan?->nivelRel?->descripcion ?? $c->nivel ?? 'Nivel no asignado'); ?></td>

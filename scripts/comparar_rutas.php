@@ -42,8 +42,13 @@ if (! is_array($antes)) {
 
 $salida = [];
 $codigo = 0;
-exec('php artisan route:list --json 2>&1', $salida, $codigo);
-$ahora = leerJson(implode("\n", $salida));
+exec('php -d xdebug.mode=off artisan route:list --json 2>&1', $salida, $codigo);
+$rawOutput = implode("\n", $salida);
+$pos = strpos($rawOutput, '[');
+if ($pos !== false) {
+    $rawOutput = substr($rawOutput, $pos);
+}
+$ahora = leerJson($rawOutput);
 
 if ($codigo !== 0 || ! is_array($ahora)) {
     fwrite(STDERR, "ERROR: 'php artisan route:list --json' falló. Primeras líneas:\n\n");

@@ -59,8 +59,13 @@ function leerJson(string $texto): mixed
 
 $salida = [];
 $codigo = 0;
-exec('php artisan route:list --json 2>&1', $salida, $codigo);
-$rutas = leerJson(implode("\n", $salida));
+exec('php -d xdebug.mode=off artisan route:list --json 2>&1', $salida, $codigo);
+$rawText = implode("\n", $salida);
+$pos = strpos($rawText, '[');
+if ($pos !== false) {
+    $rawText = substr($rawText, $pos);
+}
+$rutas = leerJson($rawText);
 
 if (! is_array($rutas)) {
     $fallback = '.ai/baseline/routes.json';

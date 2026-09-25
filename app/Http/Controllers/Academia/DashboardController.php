@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Academia;
 
 use App\Http\Controllers\Controller;
+use App\Models\Academia\Ciclo;
+use App\Models\Academia\Curso;
 use App\Models\Academia\HorarioDet;
+use App\Models\Academia\Materia;
+use App\Models\Academia\Plan;
 use App\Services\AcademiaDashboardService;
 use App\Services\CicloActualService;
 use Illuminate\Http\Request;
@@ -22,11 +26,13 @@ class DashboardController extends Controller
     {
         $ciclo = $this->cicloService->resolve($request);
         $summary = $this->dashboardService->build($ciclo);
+        $cycle = [$ciclo->inicial, $ciclo->final, $ciclo->periodo];
 
         $kpis = $summary['kpis'];
+        $totales = $this->getTotales($ciclo);
 
         // Horarios por día (para gráfico)
-        $horariosPorDia = \App\Models\Academia\HorarioDet::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
+        $horariosPorDia = HorarioDet::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
             ->activo()
             ->selectRaw('dia, COUNT(*) as total')
             ->groupBy('dia')
@@ -44,12 +50,98 @@ class DashboardController extends Controller
             ->mapWithKeys(fn ($h) => [$h->origen_horario ?: 'SIN_DEFINIR' => $h->total])
             ->toArray();
 
+        // Materias vinculadas al ciclo (vía horarios_det o cursos)
+        $materiaKeys = HorarioDet::porCiclo(...$cycle)
+            ->activo()
+            ->select('clave_asignatura')
+            ->distinct()
+            ->pluck('clave_asignatura');
+
+        if ($materiaKeys->isEmpty()) {
+            $materiaKeys = Curso::porCiclo(...$cycle)
+                ->activo()
+                ->select('clave_asignatura')
+                ->distinct()
+                ->pluck('clave_asignatura');
+        }
+
+        $materiasQuery = Materia::query()->with(['plan.nivelRel']);
+        if ($materiaKeys->isNotEmpty()) {
+            $materiasQuery->whereIn('clave_asignatura', $materiaKeys);
+        } else {
+            $materiasQuery->activa()->take(100);
+        }
+        $materias = $materiasQuery->orderBy('nombre_asignatura')->get();
+
+        // Planes vinculados al ciclo (vía cursos o materias)
+        $planIds = Curso::porCiclo(...$cycle)
+            ->activo()
+            ->whereNotNull('id_plan')
+            ->select('id_plan')
+            ->distinct()
+            ->pluck('id_plan');
+
+        if ($planIds->isEmpty() && $materiaKeys->isNotEmpty()) {
+            $planIds = $materias->pluck('id_plan')->filter()->unique();
+        }
+
+        $planesQuery = Plan::query()->with('nivelRel')->withCount('materias');
+        if ($planIds->isNotEmpty()) {
+            $planesQuery->whereIn('id_plan', $planIds);
+        } else {
+            $planesQuery->activo()->take(50);
+        }
+        $planes = $planesQuery->orderBy('nombre_plan')->get();
+
+        // ==================== CICLOS DISPONIBLES ====================
+        $ciclosDisponibles = \App\Models\Academia\Ciclo::query()
+            ->orderByDesc('inicial')
+            ->orderByDesc('final')
+            ->orderByDesc('periodo')
+            ->get();
+
+        // ==================== ASIGNACIONES ====================
+        // Obtiene las asignaciones de horarios para el ciclo actual, con relaciones necesarias.
+        $asignaciones = \App\Models\Academia\HorarioDet::porCiclo(...$cycle)
+            ->activo()
+            ->with(['grupo', 'materia'])
+            ->orderBy('codigo_grupo')
+            ->paginate(20);
+
+        // Pasar datos adicionales al view
         return view('academia.dashboard.index', [
             'ciclo' => $ciclo,
+            'ciclosDisponibles' => $ciclosDisponibles,
             'kpis' => $kpis,
+            'totales' => $totales,
             'dashboardSummary' => $summary,
             'horariosPorDia' => $horariosPorDia,
             'porOrigen' => $porOrigen,
+            'materias' => $materias,
+            'planes' => $planes,
+            'asignaciones' => $asignaciones,
+        ]);
+
+
+        
+
+
+        $ciclosDisponibles = Ciclo::query()
+            ->orderByDesc('inicial')
+            ->orderByDesc('final')
+            ->orderByDesc('periodo')
+            ->get();
+
+        return view('academia.dashboard.index', [
+            'ciclo' => $ciclo,
+            'ciclosDisponibles' => $ciclosDisponibles,
+            'kpis' => $kpis,
+            'totales' => $totales,
+            'dashboardSummary' => $summary,
+            'horariosPorDia' => $horariosPorDia,
+            'porOrigen' => $porOrigen,
+            'materias' => $materias,
+            'planes' => $planes,
         ]);
     }
 

@@ -1,0 +1,351 @@
+Ciclo resuelto:
+Array
+(
+    [id] => 33
+    [inicial] => 2026
+    [final] => 2026
+    [periodo] => 3
+    [descripcion] => Mayo - Agosto 2026
+    [fecha_inicial] => 2026-05-04T06:00:00.000000Z
+    [fecha_final] => 2026-08-27T06:00:00.000000Z
+    [activo] => 1
+    [created_at] => 
+    [updated_at] => 
+)
+
+Ciclos con datos en BD:
+Ciclo 2026-2026-1 (inicial=2026, final=2026, periodo=1) Activo: 1 | Grupos: 160 | Horarios: 4026
+
+KPIs:
+Array
+(
+    [alumnos] => 0
+    [grupos] => 0
+    [profesores] => 0
+    [horarios] => 0
+    [cursos] => 0
+    [planes] => 0
+    [materias] => 0
+    [niveles] => 0
+    [turnos] => 0
+)
+
+Alumnos por grupo (count=0):
+Array
+(
+)
+
+Cursos por sede:
+Array
+(
+)
+
+Profesores por origen:
+Array
+(
+)
+
+Horas por origen:
+Array
+(
+)
+
+Cursos por origen (count=0):
+Array
+(
+)
+
+Niveles:
+Array
+(
+)
+
+Turnos:
+Array
+(
+)
+
+Materias sample:
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [clave_asignatura] => 17BDDNPR0
+            [id_plan] => 1
+            [nombre_asignatura] => INTRODUCCIÓN A LA LENGUA INGLESA
+            [nombre_corto] => 
+            [semestre] => 
+            [horas_teoria] => 35
+            [horas_practica] => 0
+            [creditos] => 35
+            [tipo] => obligatoria
+            [activa] => 1
+            [created_at] => 
+            [updated_at] => 
+            [plan] => Array
+                (
+                    [id] => 84
+                    [id_plan] => 1
+                    [nombre_plan] => PLAN DE ASISTENCIA
+                    [nivel] => AUT
+                    [modalidad] => 
+                    [duracion_semestres] => 
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [clave_asignatura] => 17BDDNCB1
+            [id_plan] => 1
+            [nombre_asignatura] => MATEMÁTICAS
+            [nombre_corto] => 
+            [semestre] => 
+            [horas_teoria] => 5
+            [horas_practica] => 0
+            [creditos] => 5
+            [tipo] => obligatoria
+            [activa] => 1
+            [created_at] => 
+            [updated_at] => 
+            [plan] => Array
+                (
+                    [id] => 84
+                    [id_plan] => 1
+                    [nombre_plan] => PLAN DE ASISTENCIA
+                    [nivel] => AUT
+                    [modalidad] => 
+                    [duracion_semestres] => 
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [clave_asignatura] => 17BDDNCB2
+            [id_plan] => 1
+            [nombre_asignatura] => ADMINISTRACIÓN
+            [nombre_corto] => 
+            [semestre] => 
+            [horas_teoria] => 5
+            [horas_practica] => 0
+            [creditos] => 5
+            [tipo] => obligatoria
+            [activa] => 1
+            [created_at] => 
+            [updated_at] => 
+            [plan] => Array
+                (
+                    [id] => 84
+                    [id_plan] => 1
+                    [nombre_plan] => PLAN DE ASISTENCIA
+                    [nivel] => AUT
+                    [modalidad] => 
+                    [duracion_semestres] => 
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [3] => Array
+        (
+            [id] => 4
+            [clave_asignatura] => 17BDDNCB3
+            [id_plan] => 1
+            [nombre_asignatura] => INFORMÁTICA I
+            [nombre_corto] => 
+            [semestre] => 
+            [horas_teoria] => 4
+            [horas_practica] => 0
+            [creditos] => 4
+            [tipo] => obligatoria
+            [activa] => 1
+            [created_at] => 
+            [updated_at] => 
+            [plan] => Array
+                (
+                    [id] => 84
+                    [id_plan] => 1
+                    [nombre_plan] => PLAN DE ASISTENCIA
+                    [nivel] => AUT
+                    [modalidad] => 
+                    [duracion_semestres] => 
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [4] => Array
+        (
+            [id] => 5
+            [clave_asignatura] => 17BDDNFT4
+            [id_plan] => 1
+            [nombre_asignatura] => ECONOMÍA
+            [nombre_corto] => 
+            [semestre] => 
+            [horas_teoria] => 6
+            [horas_practica] => 0
+            [creditos] => 6
+            [tipo] => obligatoria
+            [activa] => 1
+            [created_at] => 
+            [updated_at] => 
+            [plan] => Array
+                (
+                    [id] => 84
+                    [id_plan] => 1
+                    [nombre_plan] => PLAN DE ASISTENCIA
+                    [nivel] => AUT
+                    [modalidad] => 
+                    [duracion_semestres] => 
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+)
+
+Planes sample:
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [id_plan] => 1
+            [nombre_plan] => TSU-DDN-B-17
+            [nivel] => DDN
+            [modalidad] => 
+            [duracion_semestres] => 
+            [activo] => 1
+            [created_at] => 
+            [updated_at] => 
+            [materias_count] => 41
+            [nivel_rel] => Array
+                (
+                    [id] => 3
+                    [nivel] => DDN
+                    [descripcion] => TSU. DESARROLLO DE NEGOCIOS ÁREA MERCADOTECNIA
+                    [orden] => 0
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [id_plan] => 2
+            [nombre_plan] => TSU-DDN-I-17
+            [nivel] => DDN
+            [modalidad] => 
+            [duracion_semestres] => 
+            [activo] => 1
+            [created_at] => 
+            [updated_at] => 
+            [materias_count] => 40
+            [nivel_rel] => Array
+                (
+                    [id] => 3
+                    [nivel] => DDN
+                    [descripcion] => TSU. DESARROLLO DE NEGOCIOS ÁREA MERCADOTECNIA
+                    [orden] => 0
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [id_plan] => 3
+            [nombre_plan] => TSU-DDN-D-17
+            [nivel] => DDN
+            [modalidad] => 
+            [duracion_semestres] => 
+            [activo] => 1
+            [created_at] => 
+            [updated_at] => 
+            [materias_count] => 40
+            [nivel_rel] => Array
+                (
+                    [id] => 3
+                    [nivel] => DDN
+                    [descripcion] => TSU. DESARROLLO DE NEGOCIOS ÁREA MERCADOTECNIA
+                    [orden] => 0
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [3] => Array
+        (
+            [id] => 4
+            [id_plan] => 4
+            [nombre_plan] => TSU-LCS-I-17
+            [nivel] => LCS
+            [modalidad] => 
+            [duracion_semestres] => 
+            [activo] => 1
+            [created_at] => 
+            [updated_at] => 
+            [materias_count] => 44
+            [nivel_rel] => Array
+                (
+                    [id] => 5
+                    [nivel] => LCS
+                    [descripcion] => TSU. LOGÍSTICA ÁREA CADENA DE SUMINISTROS
+                    [orden] => 0
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+    [4] => Array
+        (
+            [id] => 5
+            [id_plan] => 5
+            [nombre_plan] => TSU-LCS-D-17
+            [nivel] => LCS
+            [modalidad] => 
+            [duracion_semestres] => 
+            [activo] => 1
+            [created_at] => 
+            [updated_at] => 
+            [materias_count] => 44
+            [nivel_rel] => Array
+                (
+                    [id] => 5
+                    [nivel] => LCS
+                    [descripcion] => TSU. LOGÍSTICA ÁREA CADENA DE SUMINISTROS
+                    [orden] => 0
+                    [activo] => 1
+                    [created_at] => 
+                    [updated_at] => 
+                )
+
+        )
+
+)

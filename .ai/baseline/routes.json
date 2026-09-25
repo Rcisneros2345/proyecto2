@@ -495,6 +495,30 @@
     },
     {
         "domain": null,
+        "method": "GET|HEAD",
+        "uri": "academia/kpis-json",
+        "name": "academia.kpisJson",
+        "action": "App\\Http\\Controllers\\Academia\\DashboardController@kpisJson",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:academia,view"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "GET|HEAD",
+        "uri": "academia/materias",
+        "name": "academia.materias.index",
+        "action": "Closure",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:academia,view"
+        ]
+    },
+    {
+        "domain": null,
         "method": "POST",
         "uri": "academia/planes",
         "name": "academia.planes.store",
@@ -628,7 +652,6 @@
             "web",
             "App\\Http\\Middleware\\Authenticate",
             "App\\Http\\Middleware\\RequireModulePermission:academia,view",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:academia.profesores,usuario"
         ]
     },
@@ -780,7 +803,7 @@
         "domain": null,
         "method": "GET|HEAD",
         "uri": "api/user",
-        "name": null,
+        "name": "api.user",
         "action": "Closure",
         "middleware": [
             "api",
@@ -796,7 +819,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,view"
         ]
     },
     {
@@ -808,7 +831,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,create"
         ]
     },
     {
@@ -820,7 +843,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,create"
         ]
     },
     {
@@ -832,7 +855,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,view"
         ]
     },
     {
@@ -844,7 +867,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,update"
         ]
     },
     {
@@ -856,7 +879,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,delete"
         ]
     },
     {
@@ -868,7 +891,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:areas,update"
         ]
     },
     {
@@ -898,6 +921,18 @@
     {
         "domain": null,
         "method": "GET|HEAD",
+        "uri": "attendances/export/classes",
+        "name": "attendances.export.classes",
+        "action": "App\\Http\\Controllers\\AttendanceController@exportClassAttendances",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:asistencias,export"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "GET|HEAD",
         "uri": "attendances/print",
         "name": "attendances.print",
         "action": "App\\Http\\Controllers\\AttendanceController@print",
@@ -905,6 +940,18 @@
             "web",
             "App\\Http\\Middleware\\Authenticate",
             "App\\Http\\Middleware\\RequireModulePermission:asistencias,export"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "POST",
+        "uri": "attendances/{attendance}/observations",
+        "name": "attendances.observations.store",
+        "action": "App\\Http\\Controllers\\AttendanceController@storeObservation",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:asistencias,view"
         ]
     },
     {
@@ -928,7 +975,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:dispositivos,create"
         ]
     },
     {
@@ -940,7 +987,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:dispositivos,create"
         ]
     },
     {
@@ -977,7 +1024,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:dispositivos,update"
         ]
     },
     {
@@ -989,7 +1036,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:dispositivos,delete"
         ]
     },
     {
@@ -1025,7 +1072,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:dispositivos,update"
         ]
     },
     {
@@ -1202,7 +1249,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,create",
             "Illuminate\\Routing\\Middleware\\ThrottleRequests:30,1"
         ]
@@ -1216,7 +1262,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,create"
         ]
     },
@@ -1301,7 +1346,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,update",
             "Illuminate\\Routing\\Middleware\\ThrottleRequests:30,1"
         ]
@@ -1315,7 +1359,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,delete"
         ]
     },
@@ -1328,7 +1371,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,update",
             "Illuminate\\Routing\\Middleware\\ThrottleRequests:30,1"
         ]
@@ -1342,7 +1384,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,update"
         ]
     },
@@ -1355,7 +1396,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,update",
             "Illuminate\\Routing\\Middleware\\ThrottleRequests:30,1"
         ]
@@ -1381,7 +1421,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:empleados,enroll"
         ]
     },
     {
@@ -1393,7 +1433,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:empleados,enroll"
         ]
     },
     {
@@ -1405,7 +1445,6 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin",
             "App\\Http\\Middleware\\RequireModulePermission:empleados,update",
             "Illuminate\\Routing\\Middleware\\ThrottleRequests:30,1"
         ]
@@ -1576,6 +1615,30 @@
             "web",
             "App\\Http\\Middleware\\Authenticate",
             "App\\Http\\Middleware\\RequireModulePermission:incidencias,approve"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "POST",
+        "uri": "incidencias/{incidencia}/firmar",
+        "name": "incidencias.firmar",
+        "action": "App\\Http\\Controllers\\IncidenciaController@sign",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:incidencias,view"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "POST",
+        "uri": "incidencias/{incidencia}/vista",
+        "name": "incidencias.vista",
+        "action": "App\\Http\\Controllers\\IncidenciaController@markViewed",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:incidencias,view"
         ]
     },
     {
@@ -2021,6 +2084,30 @@
     {
         "domain": null,
         "method": "GET|HEAD",
+        "uri": "preferencia/usuarios/{user}/captura-asistencia",
+        "name": "preferencia.usuarios.captura-asistencia.edit",
+        "action": "App\\Http\\Controllers\\Academia\\AttendanceCaptureAssignmentController@edit",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:usuarios,update"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "PUT",
+        "uri": "preferencia/usuarios/{user}/captura-asistencia",
+        "name": "preferencia.usuarios.captura-asistencia.update",
+        "action": "App\\Http\\Controllers\\Academia\\AttendanceCaptureAssignmentController@update",
+        "middleware": [
+            "web",
+            "App\\Http\\Middleware\\Authenticate",
+            "App\\Http\\Middleware\\RequireModulePermission:usuarios,update"
+        ]
+    },
+    {
+        "domain": null,
+        "method": "GET|HEAD",
         "uri": "preferencia/usuarios/{user}/editar",
         "name": "preferencia.usuarios.edit",
         "action": "App\\Http\\Controllers\\PreferenciaUsuarioController@edit",
@@ -2039,7 +2126,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,view"
         ]
     },
     {
@@ -2051,7 +2138,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,create"
         ]
     },
     {
@@ -2063,7 +2150,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,create"
         ]
     },
     {
@@ -2075,7 +2162,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,view"
         ]
     },
     {
@@ -2087,7 +2174,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,update"
         ]
     },
     {
@@ -2099,7 +2186,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,delete"
         ]
     },
     {
@@ -2111,7 +2198,7 @@
         "middleware": [
             "web",
             "App\\Http\\Middleware\\Authenticate",
-            "App\\Http\\Middleware\\EnsureAdmin"
+            "App\\Http\\Middleware\\RequireModulePermission:puestos,update"
         ]
     },
     {

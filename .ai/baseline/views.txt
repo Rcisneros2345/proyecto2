@@ -10,7 +10,10 @@ resources/views/academia/cursos/create.blade.php
 resources/views/academia/cursos/edit.blade.php
 resources/views/academia/cursos/index.blade.php
 resources/views/academia/cursos/show.blade.php
+resources/views/academia/dashboard/_materias-module.blade.php
+resources/views/academia/dashboard/_planes-module.blade.php
 resources/views/academia/dashboard/index.blade.php
+resources/views/academia/dashboard/materias-module.blade.php
 resources/views/academia/empty-ciclos.blade.php
 resources/views/academia/grupos/asistencia.blade.php
 resources/views/academia/grupos/index.blade.php
@@ -87,6 +90,7 @@ resources/views/permissions/assign-groups.blade.php
 resources/views/permissions/create.blade.php
 resources/views/permissions/edit.blade.php
 resources/views/permissions/index.blade.php
+resources/views/preferencia/captura-asistencia.blade.php
 resources/views/preferencia/crear.blade.php
 resources/views/preferencia/editar.blade.php
 resources/views/preferencia/index.blade.php

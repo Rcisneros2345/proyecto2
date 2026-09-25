@@ -26,11 +26,15 @@ echo '== Baseline — '.date('Y-m-d H:i:s')." ==\n";
 /* ------------------------------------------------------------------ 1) Rutas */
 $salida = [];
 $codigo = 0;
-exec('php artisan route:list --json 2>&1', $salida, $codigo);
+exec('php -d xdebug.mode=off artisan route:list --json 2>&1', $salida, $codigo);
 $json = implode("\n", $salida);
 
-// Quita un posible BOM al inicio.
+// Quita un posible BOM al inicio y cualquier salida previa a '['
 $json = preg_replace('/^\xEF\xBB\xBF/', '', $json);
+$pos = strpos($json, '[');
+if ($pos !== false) {
+    $json = substr($json, $pos);
+}
 
 $rutas = json_decode($json, true);
 

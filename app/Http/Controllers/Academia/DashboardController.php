@@ -52,4 +52,40 @@ class DashboardController extends Controller
             'porOrigen' => $porOrigen,
         ]);
     }
+
+    /** GET /academia/kpis-json?ciclo=label */
+    public function kpisJson(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $ciclo = $this->cicloService->resolve($request);
+        $summary = $this->dashboardService->build($ciclo);
+
+        return response()->json([
+            'kpis' => $summary['kpis'],
+            'totales' => $summary['dataQuality'] ? [] : $this->getTotales($ciclo),
+            'ciclo' => $ciclo->label,
+        ]);
+    }
+
+    private function getTotales(Ciclo $ciclo): array
+    {
+        $cycle = [$ciclo->inicial, $ciclo->final, $ciclo->periodo];
+        $groups = \App\Models\Academia\Grupo::porCiclo(...$cycle)->activo()->count();
+        $enrollments = \App\Models\Academia\AlumnoGrupo::query()
+            ->where('inicial', $ciclo->inicial)
+            ->where('final', $ciclo->final)
+            ->where('periodo', $ciclo->periodo)
+            ->distinct()
+            ->count('numero_alumno');
+        $courses = \App\Models\Academia\Curso::porCiclo(...$cycle)->activo()->count();
+
+        return [
+            'grupos' => $groups,
+            'alumnos' => $enrollments,
+            'profesores' => (clone \App\Models\Academia\HorarioDet::porCiclo(...$cycle)->activo())->distinct()->count('clave_profesor'),
+            'horarios' => (clone \App\Models\Academia\HorarioDet::porCiclo(...$cycle)->activo())->distinct()->count('codigo_grupo'),
+            'cursos' => $courses,
+            'materias' => (clone \App\Models\Academia\Curso::porCiclo(...$cycle)->activo())->distinct()->count('clave_asignatura'),
+            'planes' => (clone \App\Models\Academia\Curso::porCiclo(...$cycle)->activo())->distinct()->count('id_plan'),
+        ];
+    }
 }

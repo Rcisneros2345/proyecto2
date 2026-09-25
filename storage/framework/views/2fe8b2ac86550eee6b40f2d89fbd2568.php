@@ -38,7 +38,7 @@
 
 
 <div id="kpi-region" aria-live="polite" aria-busy="false">
-  <div class="kpi-grid" data-kpis-url="<?php echo e(route('dashboard.kpisJson')); ?>" data-cycle="<?php echo e($ciclo->label); ?>">
+  <div class="kpi-grid" data-kpis-url="<?php echo e(route('academia.kpisJson')); ?>" data-cycle="<?php echo e($ciclo->label); ?>">
     
     <?php if (isset($component)) { $__componentOriginal527fae77f4db36afc8c8b7e9f5f81682 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal527fae77f4db36afc8c8b7e9f5f81682 = $attributes; } ?>
@@ -205,7 +205,7 @@
     <span class="small text-tertiary-token">Clic para ver lista filtrada por <?php echo e($ciclo->label); ?></span>
   </div>
 
-  <?php
+<?php
     $modulos = [
       ['label' => 'Grupos',     'icon' => 'bi-people',          'color' => 'purple',  'ciclo' => $kpis['grupos'],                                     'total' => $totales['grupos'] ?? null,         'href' => route('academia.grupos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Ver y gestionar grupos'],
       ['label' => 'Alumnos',    'icon' => 'bi-mortarboard',     'color' => 'blue',    'ciclo' => $kpis['alumnos'],                                    'total' => $totales['alumnos'] ?? null,        'href' => route('academia.alumnos.index', ['ciclo_principal' => $ciclo->label]),     'desc' => 'Buscar y ver kardex'],
@@ -213,8 +213,6 @@
       ['label' => 'Horarios',   'icon' => 'bi-calendar-week',  'color' => 'orange',  'ciclo' => $kpis['horarios'],                                   'total' => $totales['horarios'] ?? null,       'href' => route('academia.horarios.clase', ['ciclo_principal' => $ciclo->label]),    'desc' => 'Clases y asistencia'],
       ['label' => 'Kardex',     'icon' => 'bi-file-earmark-text','color' => 'pink',   'ciclo' => $kpis['kardex'] ?? 0,                                'total' => $totales['kardex'] ?? null,         'href' => route('academia.kardex.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Evaluaciones del ciclo'],
       ['label' => 'Cursos',     'icon' => 'bi-book',            'color' => 'teal',    'ciclo' => $kpis['cursos'],                                     'total' => $totales['cursos'] ?? null,         'href' => route('academia.cursos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Oferta por ciclo'],
-      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias'],                                    'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Materias del ciclo'],
-      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => $kpis['planes'],                                      'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Planes del ciclo'],
     ];
   ?>
 
@@ -240,6 +238,9 @@
         </div>
       </a>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+    <?php echo $__env->make('academia.dashboard._materias-module', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+    <?php echo $__env->make('academia.dashboard._planes-module', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
   </div>
 </section>
 
@@ -260,34 +261,37 @@
 
 <section class="mb-4" aria-labelledby="desglose-heading">
   <div class="section-heading"><h2 id="desglose-heading" class="h6 fw-bold mb-0">Desglose operativo</h2><span class="small text-tertiary-token">Distribución del ciclo seleccionado</span></div>
-  <div class="row g-3">
-    <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['alumnosPorGrupo']->count())); ?> combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary"><?php echo e(number_format($kpis['alumnos'])); ?></span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
-      <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['alumnosPorGrupo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-        <tr><td><?php echo e($row->grado); ?></td><td><?php echo e($row->tipo_grupo ?: 'Sin definir'); ?></td><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end fw-semibold"><?php echo e(number_format($row->alumnos)); ?></td></tr>
-      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
-      <?php endif; ?>
-      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
-    <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
-      <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['cursosPorSede']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-        <tr><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->cursos); ?></td><td class="text-end"><?php echo e($row->planes); ?></td><td class="text-end"><?php echo e($row->materias); ?></td></tr>
-      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
-      <?php endif; ?>
-      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
-  </div>
-</section>
+  
+  
+  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['alumnosPorGrupo']->count())); ?> combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary"><?php echo e(number_format($kpis['alumnos'])); ?></span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
+    <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['alumnosPorGrupo']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+      <tr><td><?php echo e($row->grado); ?></td><td><?php echo e($row->tipo_grupo ?: 'Sin definir'); ?></td><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end fw-semibold"><?php echo e(number_format($row->alumnos)); ?></td></tr>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+      <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
+    <?php endif; ?>
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
+  
+  
+  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
+    <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['cursosPorSede']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+      <tr><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->cursos); ?></td><td class="text-end"><?php echo e($row->planes); ?></td><td class="text-end"><?php echo e($row->materias); ?></td></tr>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+      <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
+    <?php endif; ?>
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
 
-<section class="row g-3 mb-4" aria-label="Profesores y horas de clase">
-  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores PA y PTC</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
+  
+  <div class="col-lg-12"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores y horas</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
     <?php $__currentLoopData = $dashboardSummary['profesoresPorOrigen']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <?php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; $hours = $dashboardSummary['horasPorOrigen']->firstWhere('origen', $row->origen); ?>
       <tr><td><span class="badge <?php echo e($originLabel === 'PTC' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'); ?>"><?php echo e($originLabel); ?></span></td><td class="text-end"><?php echo e($row->profesores); ?></td><td class="text-end"><?php echo e($hours->clases ?? 0); ?></td><td class="text-end"><?php echo e($hours->horas ?? 0); ?></td></tr>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </tbody></table></div>
     <?php if (! ($dashboardSummary['dataQuality']['hoursCaptured'])): ?><div class="card-footer small text-warning"><i class="bi bi-info-circle me-1"></i>La fuente no trae horas capturadas; se muestran las clases registradas.</div><?php endif; ?>
-  </div></div>
-  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor PA/PTC</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['cursosPorOrigen']->count())); ?> cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
+  </div></div></div>
+
+  
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['cursosPorOrigen']->count())); ?> cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
     <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['cursosPorOrigen']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
       <?php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; ?>
       <tr><td><?php echo e($row->nombre_curso ?: $row->clave_curso); ?></td><td><?php echo e($originLabel); ?></td><td><?php echo e($row->id_campus ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->sesiones); ?></td></tr>
@@ -295,15 +299,14 @@
       <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos registrados</td></tr>
     <?php endif; ?>
     </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-origin"></div></div></div>
-</section>
+  
+  
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Catálogos académicos</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['niveles']->count())); ?> niveles · <?php echo e(number_format($dashboardSummary['turnos']->count())); ?> turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="academic-catalogs" title="Exportar catálogos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar catálogos</span></button></div><div class="table-responsive"><table id="academic-catalogs" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-y-turnos"><thead><tr><th>Descripción</th><th class="text-end">Cantidad</th></tr></thead><tbody>
+    <tr><th scope="row">Niveles educativos</th><td class="text-end"><?php echo e(number_format($dashboardSummary['niveles']->count())); ?></td></tr>
+    <tr><th scope="row">Turnos</th><td class="text-end"><?php echo e(number_format($dashboardSummary['turnos']->count())); ?></td></tr>
+    <tr><td colspan="2" class="text-center text-tertiary-token py-4">Catálogos vacíos</td></tr>
+    </tbody></table></div></div></div>
 
-<section class="row g-3 mb-4" aria-label="Catálogos académicos">
-  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Niveles educativos</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['niveles']->count())); ?> niveles</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="education-levels" title="Exportar niveles"><i class="bi bi-download"></i><span class="visually-hidden">Exportar niveles</span></button></div><div class="table-responsive"><table id="education-levels" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-educativos"><thead><tr><th>Nivel</th><th class="text-end">Grupos</th></tr></thead><tbody>
-    <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['niveles']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr><td><?php echo e($row->nivel ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->grupos); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin niveles</td></tr><?php endif; ?>
-    </tbody></table></div></div></div>
-  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Turnos</span><span class="small text-tertiary-token"><?php echo e(number_format($dashboardSummary['turnos']->count())); ?> turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="shifts" title="Exportar turnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar turnos</span></button></div><div class="table-responsive"><table id="shifts" class="table table-sm dashboard-data-table" data-export-name="turnos"><thead><tr><th>Turno</th><th class="text-end">Grupos</th></tr></thead><tbody>
-    <?php $__empty_1 = true; $__currentLoopData = $dashboardSummary['turnos']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?><tr><td><?php echo e($row->turno ?: 'Sin definir'); ?></td><td class="text-end"><?php echo e($row->grupos); ?></td></tr><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?><tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin turnos</td></tr><?php endif; ?>
-    </tbody></table></div></div></div>
 </section>
 
 

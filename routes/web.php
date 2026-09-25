@@ -46,6 +46,15 @@ Route::middleware('auth')->group(function () {
         ->middleware('module_permission:academia,view')
         ->group(function () {
             Route::get('/', [AcademiaDashboardController::class, 'index'])->name('dashboard');
+            Route::get('kpis-json', [AcademiaDashboardController::class, 'kpisJson'])->name('kpisJson');
+            Route::get('materias', function () {
+                $ciclo = app('App\Services\CicloActualService')->resolve(request());
+                $summary = app('App\Services\AcademiaDashboardService')->build($ciclo);
+                return view('academia.dashboard.materias-module', [
+                    'ciclo' => $ciclo,
+                    'materiasCount' => $summary['kpis']['materias'] ?? 0,
+                ]);
+            })->name('materias.index');
 
             // Ciclos
             Route::resource('ciclos', AcademiaCicloController::class)->only(['create', 'store'])->middleware('module_permission:academia.ciclos,create');

@@ -40,7 +40,7 @@
 
 {{-- ========== KPIs dual (ciclo + total) ========== --}}
 <div id="kpi-region" aria-live="polite" aria-busy="false">
-  <div class="kpi-grid" data-kpis-url="{{ route('dashboard.kpisJson') }}" data-cycle="{{ $ciclo->label }}">
+  <div class="kpi-grid" data-kpis-url="{{ route('academia.kpisJson') }}" data-cycle="{{ $ciclo->label }}">
     {{-- Grupos --}}
     <x-stat-card :icon="'bi-people'" :label="'Grupos'" :value="$kpis['grupos']" :color="'purple'">
       @isset($totales['grupos'])
@@ -99,7 +99,7 @@
     <span class="small text-tertiary-token">Clic para ver lista filtrada por {{ $ciclo->label }}</span>
   </div>
 
-  @php
+@php
     $modulos = [
       ['label' => 'Grupos',     'icon' => 'bi-people',          'color' => 'purple',  'ciclo' => $kpis['grupos'],                                     'total' => $totales['grupos'] ?? null,         'href' => route('academia.grupos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Ver y gestionar grupos'],
       ['label' => 'Alumnos',    'icon' => 'bi-mortarboard',     'color' => 'blue',    'ciclo' => $kpis['alumnos'],                                    'total' => $totales['alumnos'] ?? null,        'href' => route('academia.alumnos.index', ['ciclo_principal' => $ciclo->label]),     'desc' => 'Buscar y ver kardex'],
@@ -107,8 +107,6 @@
       ['label' => 'Horarios',   'icon' => 'bi-calendar-week',  'color' => 'orange',  'ciclo' => $kpis['horarios'],                                   'total' => $totales['horarios'] ?? null,       'href' => route('academia.horarios.clase', ['ciclo_principal' => $ciclo->label]),    'desc' => 'Clases y asistencia'],
       ['label' => 'Kardex',     'icon' => 'bi-file-earmark-text','color' => 'pink',   'ciclo' => $kpis['kardex'] ?? 0,                                'total' => $totales['kardex'] ?? null,         'href' => route('academia.kardex.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Evaluaciones del ciclo'],
       ['label' => 'Cursos',     'icon' => 'bi-book',            'color' => 'teal',    'ciclo' => $kpis['cursos'],                                     'total' => $totales['cursos'] ?? null,         'href' => route('academia.cursos.index', ['ciclo_principal' => $ciclo->label]),      'desc' => 'Oferta por ciclo'],
-      ['label' => 'Materias',   'icon' => 'bi-journal-bookmark','color' => 'amber',   'ciclo' => $kpis['materias'],                                    'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Materias del ciclo'],
-      ['label' => 'Planes',     'icon' => 'bi-collection',     'color' => 'lavender','ciclo' => $kpis['planes'],                                      'total' => null,                                  'href' => route('academia.planes.index'),                                            'desc' => 'Planes del ciclo'],
     ];
   @endphp
 
@@ -134,6 +132,9 @@
         </div>
       </a>
     @endforeach
+
+    @include('academia.dashboard._materias-module')
+    @include('academia.dashboard._planes-module')
   </div>
 </section>
 
@@ -154,34 +155,37 @@
 
 <section class="mb-4" aria-labelledby="desglose-heading">
   <div class="section-heading"><h2 id="desglose-heading" class="h6 fw-bold mb-0">Desglose operativo</h2><span class="small text-tertiary-token">Distribución del ciclo seleccionado</span></div>
-  <div class="row g-3">
-    <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['alumnosPorGrupo']->count()) }} combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary">{{ number_format($kpis['alumnos']) }}</span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
-      @forelse($dashboardSummary['alumnosPorGrupo'] as $row)
-        <tr><td>{{ $row->grado }}</td><td>{{ $row->tipo_grupo ?: 'Sin definir' }}</td><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end fw-semibold">{{ number_format($row->alumnos) }}</td></tr>
-      @empty
-        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
-      @endforelse
-      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
-    <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
-      @forelse($dashboardSummary['cursosPorSede'] as $row)
-        <tr><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end">{{ $row->cursos }}</td><td class="text-end">{{ $row->planes }}</td><td class="text-end">{{ $row->materias }}</td></tr>
-      @empty
-        <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
-      @endforelse
-      </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
-  </div>
-</section>
+  
+  {{-- Tabla 1: Alumnos por grado, modalidad y sede --}}
+  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Alumnos por grado, modalidad y sede</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['alumnosPorGrupo']->count()) }} combinaciones</span></div><div class="d-flex gap-2 align-items-center"><span class="badge bg-primary-subtle text-primary">{{ number_format($kpis['alumnos']) }}</span><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="students-breakdown" title="Exportar alumnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar alumnos</span></button></div></div><div class="table-responsive"><table id="students-breakdown" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="alumnos-por-grado-modalidad-sede"><thead><tr><th>Grado</th><th>Modalidad</th><th>Sede</th><th class="text-end">Alumnos</th></tr></thead><tbody>
+    @forelse($dashboardSummary['alumnosPorGrupo'] as $row)
+      <tr><td>{{ $row->grado }}</td><td>{{ $row->tipo_grupo ?: 'Sin definir' }}</td><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end fw-semibold">{{ number_format($row->alumnos) }}</td></tr>
+    @empty
+      <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin alumnos inscritos en este ciclo</td></tr>
+    @endforelse
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="students-breakdown"></div></div></div>
+  
+  {{-- Tabla 2: Cursos por sede --}}
+  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por sede</span><span class="small text-tertiary-token">Oferta académica</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-campus" title="Exportar cursos por sede"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por sede</span></button></div><div class="table-responsive"><table id="courses-campus" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-sede"><thead><tr><th>Sede</th><th class="text-end">Cursos</th><th class="text-end">Planes</th><th class="text-end">Materias</th></tr></thead><tbody>
+    @forelse($dashboardSummary['cursosPorSede'] as $row)
+      <tr><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end">{{ $row->cursos }}</td><td class="text-end">{{ $row->planes }}</td><td class="text-end">{{ $row->materias }}</td></tr>
+    @empty
+      <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos en este ciclo</td></tr>
+    @endforelse
+    </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-campus"></div></div></div>
 
-<section class="row g-3 mb-4" aria-label="Profesores y horas de clase">
-  <div class="col-lg-5"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores PA y PTC</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
+  {{-- Tabla 3: Profesores y horas (combinadas PA y PTC) --}}
+  <div class="col-lg-12"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Profesores y horas</span><span class="small text-tertiary-token">Personal asignado al ciclo</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="teachers-origin" title="Exportar profesores"><i class="bi bi-download"></i><span class="visually-hidden">Exportar profesores</span></button></div><div class="table-responsive"><table id="teachers-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="profesores-pa-ptc"><thead><tr><th>Tipo</th><th class="text-end">Profesores</th><th class="text-end">Clases</th><th class="text-end">Horas</th></tr></thead><tbody>
     @foreach($dashboardSummary['profesoresPorOrigen'] as $row)
       @php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; $hours = $dashboardSummary['horasPorOrigen']->firstWhere('origen', $row->origen); @endphp
       <tr><td><span class="badge {{ $originLabel === 'PTC' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info' }}">{{ $originLabel }}</span></td><td class="text-end">{{ $row->profesores }}</td><td class="text-end">{{ $hours->clases ?? 0 }}</td><td class="text-end">{{ $hours->horas ?? 0 }}</td></tr>
     @endforeach
     </tbody></table></div>
     @unless($dashboardSummary['dataQuality']['hoursCaptured'])<div class="card-footer small text-warning"><i class="bi bi-info-circle me-1"></i>La fuente no trae horas capturadas; se muestran las clases registradas.</div>@endunless
-  </div></div>
-  <div class="col-lg-7"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor PA/PTC</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
+  </div></div></div>
+
+  {{-- Tabla 4: Cursos por profesor y Niveles/Turnos --}}
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Cursos por profesor</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} cursos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="courses-origin" title="Exportar cursos por profesor"><i class="bi bi-download"></i><span class="visually-hidden">Exportar cursos por profesor</span></button></div><div class="table-responsive" style="max-height:360px"><table id="courses-origin" class="table table-sm mb-0 align-middle dashboard-data-table" data-export-name="cursos-por-profesor"><thead><tr><th>Curso</th><th>Tipo</th><th>Sede</th><th class="text-end">Sesiones</th></tr></thead><tbody>
     @forelse($dashboardSummary['cursosPorOrigen'] as $row)
       @php $originLabel = match($row->origen) { 'CA' => 'PA', 'HD' => 'PTC', default => $row->origen }; @endphp
       <tr><td>{{ $row->nombre_curso ?: $row->clave_curso }}</td><td>{{ $originLabel }}</td><td>{{ $row->id_campus ?: 'Sin definir' }}</td><td class="text-end">{{ $row->sesiones }}</td></tr>
@@ -189,15 +193,14 @@
       <tr><td colspan="4" class="text-center text-tertiary-token py-4">Sin cursos registrados</td></tr>
     @endforelse
     </tbody></table></div><div class="dashboard-table-pagination" data-pagination-for="courses-origin"></div></div></div>
-</section>
+  
+  {{-- Tabla 5: Niveles y Turnos (combinados en una sección) --}}
+  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Catálogos académicos</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['niveles']->count()) }} niveles · {{ number_format($dashboardSummary['turnos']->count()) }} turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="academic-catalogs" title="Exportar catálogos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar catálogos</span></button></div><div class="table-responsive"><table id="academic-catalogs" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-y-turnos"><thead><tr><th>Descripción</th><th class="text-end">Cantidad</th></tr></thead><tbody>
+    <tr><th scope="row">Niveles educativos</th><td class="text-end">{{ number_format($dashboardSummary['niveles']->count()) }}</td></tr>
+    <tr><th scope="row">Turnos</th><td class="text-end">{{ number_format($dashboardSummary['turnos']->count()) }}</td></tr>
+    <tr><td colspan="2" class="text-center text-tertiary-token py-4">Catálogos vacíos</td></tr>
+    </tbody></table></div></div></div>
 
-<section class="row g-3 mb-4" aria-label="Catálogos académicos">
-  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Niveles educativos</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['niveles']->count()) }} niveles</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="education-levels" title="Exportar niveles"><i class="bi bi-download"></i><span class="visually-hidden">Exportar niveles</span></button></div><div class="table-responsive"><table id="education-levels" class="table table-sm mb-0 dashboard-data-table" data-export-name="niveles-educativos"><thead><tr><th>Nivel</th><th class="text-end">Grupos</th></tr></thead><tbody>
-    @forelse($dashboardSummary['niveles'] as $row)<tr><td>{{ $row->nivel ?: 'Sin definir' }}</td><td class="text-end">{{ $row->grupos }}</td></tr>@empty<tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin niveles</td></tr>@endforelse
-    </tbody></table></div></div></div>
-  <div class="col-lg-6"><div class="card h-100 dashboard-table-card"><div class="card-header dashboard-table-header"><div><span class="fw-bold d-block">Turnos</span><span class="small text-tertiary-token">{{ number_format($dashboardSummary['turnos']->count()) }} turnos</span></div><button type="button" class="btn btn-sm btn-outline-secondary js-export-table" data-table-target="shifts" title="Exportar turnos"><i class="bi bi-download"></i><span class="visually-hidden">Exportar turnos</span></button></div><div class="table-responsive"><table id="shifts" class="table table-sm dashboard-data-table" data-export-name="turnos"><thead><tr><th>Turno</th><th class="text-end">Grupos</th></tr></thead><tbody>
-    @forelse($dashboardSummary['turnos'] as $row)<tr><td>{{ $row->turno ?: 'Sin definir' }}</td><td class="text-end">{{ $row->grupos }}</td></tr>@empty<tr><td colspan="2" class="text-center text-tertiary-token py-4">Sin turnos</td></tr>@endforelse
-    </tbody></table></div></div></div>
 </section>
 
 {{-- ========== DIAGNOSTICO — graficos con estados ========== --}}

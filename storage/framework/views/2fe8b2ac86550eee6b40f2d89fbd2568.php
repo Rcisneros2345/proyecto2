@@ -94,7 +94,48 @@
 <?php endif; ?>
 
 
-<section aria-labelledby="kpis-heading" class="mb-4">
+<section aria-labelledby="extras-heading" class="mb-4">
+  <h2 id="extras-heading" class="h6 fw-bold mb-3">Resumen Extra del Ciclo</h2>
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-body p-3">
+          <h5 class="card-title mb-2">Total de Asignaciones</h5>
+          <p class="fs-4 fw-bold text-primary"><?php echo e(number_format($asignaciones->total())); ?></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-body p-3">
+          <h5 class="card-title mb-2">Horarios por Día</h5>
+          <ul class="list-unstyled mb-0">
+            <?php $__empty_1 = true; $__currentLoopData = $horariosPorDia; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dia => $total): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+              <li>Día <?php echo e($dia); ?>: <?php echo e(number_format($total)); ?></li>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+              <li class="text-muted">Sin datos</li>
+            <?php endif; ?>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-body p-3">
+          <h5 class="card-title mb-2">Origen de Horario</h5>
+          <ul class="list-unstyled mb-0">
+            <?php $__empty_1 = true; $__currentLoopData = $porOrigen; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $origen => $total): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+              <li><?php echo e($origen); ?>: <?php echo e(number_format($total)); ?></li>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+              <li class="text-muted">Sin datos</li>
+            <?php endif; ?>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
   <h2 id="kpis-heading" class="visually-hidden">Indicadores Clave de Desempeño</h2>
   
   <div class="row g-3" id="kpi-region" aria-live="polite" aria-busy="false" data-kpis-url="<?php echo e(route('academia.kpisJson')); ?>" data-cycle="<?php echo e($ciclo->label); ?>">
@@ -986,7 +1027,7 @@
               <span class="small text-secondary">Detalle de oferta académica y sesiones asignadas</span>
             </div>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 js-table-count-badge">
-              <?php echo e(number_format($dashboardSummary['cursosPorOrigen']->count())); ?> asignaciones
+              <?php echo e(number_format($asignaciones->total())); ?> asignaciones
             </span>
           </div>
 
@@ -1092,7 +1133,7 @@
 
         <div class="card-footer bg-surface-1 border-top py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="small text-secondary js-table-info" data-table-id="courses-origin-table">
-            Mostrando 1 a 20 de <?php echo e(number_format($dashboardSummary['cursosPorOrigen']->count())); ?> asignaciones
+            Mostrando <?php echo e($asignaciones->firstItem() ?? 0); ?> a <?php echo e($asignaciones->lastItem() ?? 0); ?> de <?php echo e(number_format($asignaciones->total())); ?> asignaciones
           </div>
           <div class="js-table-pagination" data-table-id="courses-origin-table"></div>
         </div>

@@ -100,18 +100,20 @@
       <div class="card h-100 shadow-sm border">
         <div class="card-body p-3">
           <h5 class="card-title mb-2">Total de Asignaciones</h5>
-          <p class="fs-4 fw-bold text-primary">{{ number_format($totalAsignaciones) }}</p>
+          <p class="fs-4 fw-bold text-primary">{{ number_format($asignaciones->total()) }}</p>
         </div>
       </div>
     </div>
     <div class="col-12 col-md-4">
       <div class="card h-100 shadow-sm border">
         <div class="card-body p-3">
-          <h5 class="card-title mb-2">Turnos</h5>
+          <h5 class="card-title mb-2">Horarios por Día</h5>
           <ul class="list-unstyled mb-0">
-            @foreach($turnosInfo as $turno)
-              <li>{{ $turno['label'] }}: {{ number_format($turno['count']) }}</li>
-            @endforeach
+            @forelse($horariosPorDia as $dia => $total)
+              <li>Día {{ $dia }}: {{ number_format($total) }}</li>
+            @empty
+              <li class="text-muted">Sin datos</li>
+            @endforelse
           </ul>
         </div>
       </div>
@@ -119,11 +121,13 @@
     <div class="col-12 col-md-4">
       <div class="card h-100 shadow-sm border">
         <div class="card-body p-3">
-          <h5 class="card-title mb-2">Modalidades</h5>
+          <h5 class="card-title mb-2">Origen de Horario</h5>
           <ul class="list-unstyled mb-0">
-            @foreach($modalidadInfo as $mod => $cnt)
-              <li>{{ $mod }}: {{ number_format($cnt) }}</li>
-            @endforeach
+            @forelse($porOrigen as $origen => $total)
+              <li>{{ $origen }}: {{ number_format($total) }}</li>
+            @empty
+              <li class="text-muted">Sin datos</li>
+            @endforelse
           </ul>
         </div>
       </div>
@@ -1008,7 +1012,7 @@
               <span class="small text-secondary">Detalle de oferta académica y sesiones asignadas</span>
             </div>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 js-table-count-badge">
-              {{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} asignaciones
+              {{ number_format($asignaciones->total()) }} asignaciones
             </span>
           </div>
 
@@ -1110,7 +1114,7 @@
 
         <div class="card-footer bg-surface-1 border-top py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="small text-secondary js-table-info" data-table-id="courses-origin-table">
-            Mostrando 1 a 20 de {{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} asignaciones
+            Mostrando {{ $asignaciones->firstItem() ?? 0 }} a {{ $asignaciones->lastItem() ?? 0 }} de {{ number_format($asignaciones->total()) }} asignaciones
           </div>
           <div class="js-table-pagination" data-table-id="courses-origin-table"></div>
         </div>

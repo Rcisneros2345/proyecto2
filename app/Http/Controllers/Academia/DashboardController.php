@@ -121,28 +121,6 @@ class DashboardController extends Controller
             'planes' => $planes,
             'asignaciones' => $asignaciones,
         ]);
-
-
-        
-
-
-        $ciclosDisponibles = Ciclo::query()
-            ->orderByDesc('inicial')
-            ->orderByDesc('final')
-            ->orderByDesc('periodo')
-            ->get();
-
-        return view('academia.dashboard.index', [
-            'ciclo' => $ciclo,
-            'ciclosDisponibles' => $ciclosDisponibles,
-            'kpis' => $kpis,
-            'totales' => $totales,
-            'dashboardSummary' => $summary,
-            'horariosPorDia' => $horariosPorDia,
-            'porOrigen' => $porOrigen,
-            'materias' => $materias,
-            'planes' => $planes,
-        ]);
     }
 
     /** GET /academia/kpis-json?ciclo=label */

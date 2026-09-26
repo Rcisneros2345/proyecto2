@@ -93,48 +93,7 @@
 @endif
 
 {{-- ========== KPIs PRINCIPALES (Grid Simétrico de 4 Columnas) ========== --}}
-<section aria-labelledby="extras-heading" class="mb-4">
-  <h2 id="extras-heading" class="h6 fw-bold mb-3">Resumen Extra del Ciclo</h2>
-  <div class="row g-3">
-    <div class="col-12 col-md-4">
-      <div class="card h-100 shadow-sm border">
-        <div class="card-body p-3">
-          <h5 class="card-title mb-2">Total de Asignaciones</h5>
-          <p class="fs-4 fw-bold text-primary">{{ number_format($asignaciones->total()) }}</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="card h-100 shadow-sm border">
-        <div class="card-body p-3">
-          <h5 class="card-title mb-2">Horarios por Día</h5>
-          <ul class="list-unstyled mb-0">
-            @forelse($horariosPorDia as $dia => $total)
-              <li>Día {{ $dia }}: {{ number_format($total) }}</li>
-            @empty
-              <li class="text-muted">Sin datos</li>
-            @endforelse
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="card h-100 shadow-sm border">
-        <div class="card-body p-3">
-          <h5 class="card-title mb-2">Origen de Horario</h5>
-          <ul class="list-unstyled mb-0">
-            @forelse($porOrigen as $origen => $total)
-              <li>{{ $origen }}: {{ number_format($total) }}</li>
-            @empty
-              <li class="text-muted">Sin datos</li>
-            @endforelse
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
+<section aria-labelledby="kpis-heading" class="mb-4">
   <h2 id="kpis-heading" class="visually-hidden">Indicadores Clave de Desempeño</h2>
   
   <div class="row g-3" id="kpi-region" aria-live="polite" aria-busy="false" data-kpis-url="{{ route('academia.kpisJson') }}" data-cycle="{{ $ciclo->label }}">
@@ -545,13 +504,22 @@
                 <th scope="col" class="sortable" data-sort="string" style="cursor:pointer;" title="Ordenar por carrera">
                   Carrera / Plan <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
-                <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 85px;" title="Ordenar por grado">
+                <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 75px;" title="Ordenar por grado o semestre">
                   Grado <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
-                <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 90px;" title="Ordenar por horas">
-                  Horas <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+                <th scope="col" class="sortable text-center" data-sort="number" style="cursor:pointer; width: 55px;" title="Horas Teoría (HT)">
+                  HT <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
-                <th scope="col" class="text-center" style="width: 80px;">Estado</th>
+                <th scope="col" class="sortable text-center" data-sort="number" style="cursor:pointer; width: 55px;" title="Horas Práctica (HP)">
+                  HP <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+                </th>
+                <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 75px;" title="Total de Horas">
+                  Total <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+                </th>
+                <th scope="col" class="sortable text-center" data-sort="number" style="cursor:pointer; width: 70px;" title="Créditos Académicos">
+                  Créd. <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+                </th>
+                <th scope="col" class="text-center" style="width: 75px;">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -559,11 +527,11 @@
                 @php
                   $plan = $materia->plan;
                   $carrera = $plan?->nivelRel?->descripcion ?? $plan?->nivel ?? 'Sin plan asignado';
-                  $horasTotales = $materia->horas_totales;
+                  $horasTotales = $materia->horas_totales ?: (($materia->horas_teoria ?? 0) + ($materia->horas_practica ?? 0));
                 @endphp
                 <tr>
                   <td>
-                    <div class="fw-semibold text-truncate" style="max-width: 220px;" title="{{ $materia->nombre_asignatura }}">
+                    <div class="fw-semibold text-truncate" style="max-width: 200px;" title="{{ $materia->nombre_asignatura }}">
                       {{ $materia->nombre_asignatura }}
                     </div>
                     <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">
@@ -571,7 +539,7 @@
                     </span>
                   </td>
                   <td>
-                    <div class="small text-truncate" style="max-width: 180px;" title="{{ $carrera }}">
+                    <div class="small text-truncate" style="max-width: 160px;" title="{{ $carrera }}">
                       {{ $carrera }}
                     </div>
                     @if($plan)
@@ -585,14 +553,19 @@
                       <span class="text-muted small" title="Semestre no registrado en catálogo">N/D</span>
                     @endif
                   </td>
-                  <td class="text-end">
-                    @if($horasTotales > 0)
-                      <span class="fw-semibold mono">{{ $horasTotales }} hrs</span>
-                    @elseif($materia->horas_teoria > 0 || $materia->horas_practica > 0)
-                      <span class="fw-semibold mono">{{ ($materia->horas_teoria ?? 0) + ($materia->horas_practica ?? 0) }} hrs</span>
-                    @else
-                      <span class="text-muted small">0 hrs</span>
-                    @endif
+                  <td class="text-center mono" style="font-family:'JetBrains Mono',monospace">
+                    {{ $materia->horas_teoria ?? 0 }}
+                  </td>
+                  <td class="text-center mono" style="font-family:'JetBrains Mono',monospace">
+                    {{ $materia->horas_practica ?? 0 }}
+                  </td>
+                  <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">
+                    {{ $horasTotales }} hrs
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">
+                      {{ $materia->creditos ?? 0 }}
+                    </span>
                   </td>
                   <td class="text-center">
                     <span class="badge {{ $materia->activa ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border' }}">
@@ -602,7 +575,7 @@
                 </tr>
               @empty
                 <tr>
-                  <td colspan="5" class="text-center py-5 text-secondary">
+                  <td colspan="8" class="text-center py-5 text-secondary">
                     <i class="bi bi-journal-x fs-3 d-block mb-2 text-muted"></i>
                     <div>Sin materias programadas para este ciclo</div>
                     <div class="small text-muted mt-1">Seleccione otro ciclo escolar para consultar asignaturas.</div>
@@ -870,17 +843,31 @@
             <tbody>
               @php $totalAlumnosCalc = max(1, $kpis['alumnos'] ?? 1); @endphp
               @forelse($dashboardSummary['alumnosPorGrupo'] as $row)
-                @php $pct = round(($row->alumnos / $totalAlumnosCalc) * 100, 1); @endphp
+                @php 
+                  $pct = round(($row->alumnos / $totalAlumnosCalc) * 100, 1);
+                  $modBadgeClass = match($row->modalidad_corta ?? '') {
+                    'I' => 'bg-primary-subtle text-primary border-primary-subtle',
+                    'B' => 'bg-info-subtle text-info border-info-subtle',
+                    'D' => 'bg-warning-subtle text-warning border-warning-subtle',
+                    'M' => 'bg-purple-subtle text-purple border-purple-subtle',
+                    default => 'bg-secondary-subtle text-secondary border-secondary-subtle',
+                  };
+                @endphp
                 <tr>
                   <td class="text-center font-monospace fw-semibold">{{ $row->grado }}°</td>
                   <td>
-                    <span class="badge bg-light text-secondary border font-monospace">{{ $row->tipo_grupo ?: 'TR' }}</span>
-                    <span class="small text-secondary ms-1">
-                      {{ $row->tipo_grupo === 'TR' ? 'Tradicional' : ($row->tipo_grupo ?: 'Estándar') }}
-                    </span>
+                    <span class="badge {{ $modBadgeClass }} font-monospace me-1">{{ $row->modalidad_corta ?? 'TR' }}</span>
+                    <span class="fw-semibold small text-uppercase">{{ $row->modalidad ?? 'TRADICIONAL' }}</span>
+                    @if(!empty($row->es_tercer_ciclo))
+                      <span class="badge bg-warning text-dark border border-warning-subtle ms-1" style="font-size:10px" title="Tercer Ciclo (Ingeniería/Licenciatura - NME)">
+                        3C · NME
+                      </span>
+                    @endif
                   </td>
-                  <td class="text-center">
-                    <span class="badge bg-surface-2 text-secondary border">Sede {{ $row->id_campus ?: '1' }}</span>
+                  <td>
+                    <div class="fw-semibold small text-truncate" style="max-width: 250px;" title="{{ $row->sede ?? ($sedesMap[$row->id_campus] ?? 'Sede ' . $row->id_campus) }}">
+                      <i class="bi bi-geo-alt text-muted me-1"></i>{{ $row->sede ?? ($sedesMap[$row->id_campus] ?? 'Sede ' . $row->id_campus) }}
+                    </div>
                   </td>
                   <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">
                     {{ number_format($row->alumnos) }}
@@ -949,8 +936,12 @@
               @forelse($dashboardSummary['cursosPorSede'] as $row)
                 <tr>
                   <td>
-                    <span class="badge bg-surface-2 text-secondary border me-1">ID {{ $row->id_campus ?: '1' }}</span>
-                    <span class="fw-semibold small">Campus Principal {{ $row->id_campus ?: '1' }}</span>
+                    <div class="fw-semibold small text-truncate" style="max-width: 220px;" title="{{ $row->sede_nombre ?? ($sedesMap[$row->id_campus] ?? 'Campus Principal') }}">
+                      <i class="bi bi-building text-primary me-1"></i>{{ $row->sede_nombre ?? ($sedesMap[$row->id_campus] ?? 'Campus Principal') }}
+                    </div>
+                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">
+                      Sede ID: {{ $row->id_campus ?: '1' }}
+                    </span>
                   </td>
                   <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($row->cursos) }}</td>
                   <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($row->planes) }}</td>
@@ -995,6 +986,7 @@
                 <div class="fw-bold fs-6 mono text-success" style="font-family:'JetBrains Mono',monospace">
                   {{ number_format($dashboardSummary['turnos']->count()) }} turnos
                 </div>
+                <div class="text-muted" style="font-size:10px;">MATUTINO / VESPERTINO</div>
               </div>
             </div>
           </div>
@@ -1012,7 +1004,7 @@
               <span class="small text-secondary">Detalle de oferta académica y sesiones asignadas</span>
             </div>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 js-table-count-badge">
-              {{ number_format($asignaciones->total()) }} asignaciones
+              {{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} cursos
             </span>
           </div>
 
@@ -1059,7 +1051,7 @@
                 <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 100px;" title="Ordenar por tipo de contrato">
                   Tipo <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
-                <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 110px;" title="Ordenar por sede">
+                <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 140px;" title="Ordenar por sede">
                   Sede <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
                 <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 100px;" title="Ordenar por sesiones">
@@ -1093,8 +1085,10 @@
                       {{ $originLabel }}
                     </span>
                   </td>
-                  <td class="text-center">
-                    <span class="badge bg-surface-2 text-secondary border">Sede {{ $row->id_campus ?: '1' }}</span>
+                  <td>
+                    <div class="small text-truncate" style="max-width: 200px;" title="{{ $row->sede_nombre ?? ($sedesMap[$row->id_campus] ?? 'Campus Principal') }}">
+                      <i class="bi bi-geo-alt text-muted me-1"></i>{{ $row->sede_nombre ?? ($sedesMap[$row->id_campus] ?? 'Campus Principal') }}
+                    </div>
                   </td>
                   <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">
                     {{ number_format($row->sesiones) }}
@@ -1114,7 +1108,7 @@
 
         <div class="card-footer bg-surface-1 border-top py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="small text-secondary js-table-info" data-table-id="courses-origin-table">
-            Mostrando {{ $asignaciones->firstItem() ?? 0 }} a {{ $asignaciones->lastItem() ?? 0 }} de {{ number_format($asignaciones->total()) }} asignaciones
+            Mostrando 1 a 20 de {{ number_format($dashboardSummary['cursosPorOrigen']->count()) }} cursos ofertados
           </div>
           <div class="js-table-pagination" data-table-id="courses-origin-table"></div>
         </div>
@@ -1122,12 +1116,6 @@
     </div>
   </div>
 </section>
-
-{{-- ========== PARTIALS DE RETENCIÓN DE CONTRATO (Invisibles para mantener compatibilidad) ========== --}}
-<div class="visually-hidden" aria-hidden="true">
-  @include('academia.dashboard._materias-module')
-  @include('academia.dashboard._planes-module')
-</div>
 
 @endsection
 
@@ -1483,22 +1471,27 @@
         const filename = (btn.getAttribute('data-filename') || tableId) + '.xls';
         const title = btn.getAttribute('data-filename') || 'Exportación Academia';
 
-        let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="utf-8"/><title>${title}</title>
-        <style>
-          table { border-collapse:collapse; width:100%; font-family:sans-serif; }
-          th { background-color:#2563eb; color:#ffffff; font-weight:bold; border:1px solid #1d4ed8; padding:8px; }
-          td { border:1px solid #e2e8f0; padding:6px; font-size:12px; }
-          .mono { font-family:monospace; }
-        </style></head><body>
-        <h3>${title}</h3>
-        <table border="1">`;
+        const closeHead = '<' + '/head>';
+        const openBody = '<' + 'body>';
+        const closeBody = '<' + '/body>';
+        const closeHtml = '<' + '/html>';
+
+        let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+          '<head><meta charset="utf-8"/><title>' + title + '<' + '/title>' +
+          '<style>' +
+          'table { border-collapse:collapse; width:100%; font-family:sans-serif; } ' +
+          'th { background-color:#2563eb; color:#ffffff; font-weight:bold; border:1px solid #1d4ed8; padding:8px; } ' +
+          'td { border:1px solid #e2e8f0; padding:6px; font-size:12px; } ' +
+          '.mono { font-family:monospace; } ' +
+          '</style>' + closeHead + openBody +
+          '<h3>' + title + '</h3>' +
+          '<table border="1">';
 
         // Thead
         html += '<thead><tr>';
         table.querySelectorAll('thead tr th').forEach(function(th) {
           if (th.innerText.trim().toLowerCase() !== 'acción') {
-            html += `<th>${th.innerText.replace(/\s+/g, ' ').trim()}</th>`;
+            html += '<th>' + th.innerText.replace(/\s+/g, ' ').trim() + '</th>';
           }
         });
         html += '</tr></thead><tbody>';
@@ -1507,12 +1500,12 @@
         table.querySelectorAll('tbody tr:not(.empty-search-row)').forEach(function(row) {
           html += '<tr>';
           Array.from(row.cells).forEach(function(cell, idx) {
-            html += `<td>${cell.innerText.replace(/\s+/g, ' ').trim()}</td>`;
+            html += '<td>' + cell.innerText.replace(/\s+/g, ' ').trim() + '</td>';
           });
           html += '</tr>';
         });
 
-        html += '</tbody></table></body></html>';
+        html += '</tbody></table>' + closeBody + closeHtml;
 
         const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         const link = document.createElement('a');

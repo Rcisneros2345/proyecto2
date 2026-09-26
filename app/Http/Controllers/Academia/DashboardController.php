@@ -57,23 +57,23 @@ class DashboardController extends Controller
             ->distinct()
             ->pluck('clave_asignatura');
 
-        if ($materiaKeys->isEmpty()) {
-            $materiaKeys = Curso::porCiclo(...$cycle)
-                ->activo()
-                ->select('clave_asignatura')
-                ->distinct()
-                ->pluck('clave_asignatura');
-        }
+        $cursoMateriaKeys = Curso::porCiclo(...$cycle)
+            ->activo()
+            ->select('clave_asignatura')
+            ->distinct()
+            ->pluck('clave_asignatura');
+
+        $allMateriaKeys = $materiaKeys->merge($cursoMateriaKeys)->unique()->filter();
 
         $materiasQuery = Materia::query()->with(['plan.nivelRel']);
-        if ($materiaKeys->isNotEmpty()) {
-            $materiasQuery->whereIn('clave_asignatura', $materiaKeys);
+        if ($allMateriaKeys->isNotEmpty()) {
+            $materiasQuery->whereIn('clave_asignatura', $allMateriaKeys);
         } else {
-            $materiasQuery->activa()->take(100);
+            $materiasQuery->whereRaw('1=0');
         }
         $materias = $materiasQuery->orderBy('nombre_asignatura')->get();
 
-        // Planes vinculados al ciclo (vía cursos o materias)
+        // Planes vinculados al ciclo (vía cursos o materias del ciclo)
         $planIds = Curso::porCiclo(...$cycle)
             ->activo()
             ->whereNotNull('id_plan')
@@ -81,15 +81,16 @@ class DashboardController extends Controller
             ->distinct()
             ->pluck('id_plan');
 
-        if ($planIds->isEmpty() && $materiaKeys->isNotEmpty()) {
-            $planIds = $materias->pluck('id_plan')->filter()->unique();
+        if ($materias->isNotEmpty()) {
+            $planIdsFromMaterias = $materias->pluck('id_plan')->filter()->unique();
+            $planIds = $planIds->merge($planIdsFromMaterias)->unique();
         }
 
         $planesQuery = Plan::query()->with('nivelRel')->withCount('materias');
         if ($planIds->isNotEmpty()) {
             $planesQuery->whereIn('id_plan', $planIds);
         } else {
-            $planesQuery->activo()->take(50);
+            $planesQuery->whereRaw('1=0');
         }
         $planes = $planesQuery->orderBy('nombre_plan')->get();
 
@@ -108,6 +109,8 @@ class DashboardController extends Controller
             ->orderBy('codigo_grupo')
             ->paginate(20);
 
+        $sedesMap = $summary['sedesMap'] ?? \App\Models\Academia\Sede::pluck('descripcion', 'id_campus')->toArray();
+
         // Pasar datos adicionales al view
         return view('academia.dashboard.index', [
             'ciclo' => $ciclo,
@@ -120,6 +123,7 @@ class DashboardController extends Controller
             'materias' => $materias,
             'planes' => $planes,
             'asignaciones' => $asignaciones,
+            'sedesMap' => $sedesMap,
         ]);
     }
 

@@ -197,9 +197,9 @@ class Grupo extends Model
     {
         return Attribute::make(
             get: fn (): string => match ($this->turno_base) {
-                'M' => 'Matutino',
-                'V' => 'Vespertino',
-                default => $this->turno ?: 'Sin turno',
+                'M' => 'MATUTINO',
+                'V' => 'VESPERTINO',
+                default => $this->turno ? (str_starts_with(strtoupper(trim($this->turno)), 'M') ? 'MATUTINO' : (str_starts_with(strtoupper(trim($this->turno)), 'V') ? 'VESPERTINO' : $this->turno)) : 'SIN TURNO',
             },
         );
     }
@@ -208,12 +208,19 @@ class Grupo extends Model
     {
         return Attribute::make(
             get: fn (): string => match ($this->codigo_grupo_partes['modelo'] ?? null) {
-                'B' => 'Bilingüe',
-                'D' => 'Despresurizado',
-                'I' => 'Intensivo',
-                'M' => 'Mixto',
-                default => 'Tradicional',
+                'I' => 'INTENSIVO',
+                'B' => 'BIS',
+                'D' => 'DESPRESURIZADO',
+                'M' => 'MIXTO',
+                default => 'TRADICIONAL',
             },
+        );
+    }
+
+    protected function esTercerCiclo(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): bool => ($this->codigo_grupo_partes['nivel_superior'] ?? null) === '3C',
         );
     }
 

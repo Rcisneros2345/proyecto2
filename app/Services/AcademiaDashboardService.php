@@ -9,6 +9,8 @@ use App\Models\Academia\Ciclo;
 use App\Models\Academia\Curso;
 use App\Models\Academia\Grupo;
 use App\Models\Academia\HorarioDet;
+use App\Models\Academia\Materia;
+use App\Models\Academia\Sede;
 use Illuminate\Support\Collection;
 
 class AcademiaDashboardService
@@ -27,27 +29,44 @@ class AcademiaDashboardService
         $courses = Curso::porCiclo(...$cycle)->activo();
         $schedules = HorarioDet::porCiclo(...$cycle)->activo();
 
+        $materiaKeys = (clone $schedules)->distinct()->pluck('clave_asignatura');
+        $cursoMateriaKeys = (clone $courses)->distinct()->pluck('clave_asignatura');
+        $allMateriaKeys = $materiaKeys->merge($cursoMateriaKeys)->unique()->filter();
+
+        $planIds = (clone $courses)->whereNotNull('id_plan')->distinct()->pluck('id_plan');
+        if ($allMateriaKeys->isNotEmpty()) {
+            $planIdsFromMaterias = Materia::whereIn('clave_asignatura', $allMateriaKeys)
+                ->whereNotNull('id_plan')
+                ->distinct()
+                ->pluck('id_plan');
+            $planIds = $planIds->merge($planIdsFromMaterias)->unique()->filter();
+        }
+
+        $turnosCollection = $this->turnosNormalizados($ciclo);
+        $sedesMap = Sede::query()->pluck('descripcion', 'id_campus')->toArray();
+
         $kpis = [
             'alumnos' => (clone $enrollments)->distinct()->count('numero_alumno'),
             'grupos' => (clone $groups)->count(),
             'profesores' => (clone $schedules)->distinct()->count('clave_profesor'),
             'horarios' => (clone $schedules)->distinct()->count('codigo_grupo'),
             'cursos' => (clone $courses)->count(),
-            'planes' => (clone $courses)->distinct()->count('id_plan'),
-            'materias' => (clone $courses)->distinct()->count('clave_asignatura'),
+            'planes' => $planIds->count() ?: (clone $courses)->distinct()->count('id_plan'),
+            'materias' => $allMateriaKeys->count() ?: (clone $courses)->distinct()->count('clave_asignatura'),
             'niveles' => (clone $groups)->distinct()->count('nivel'),
-            'turnos' => (clone $groups)->distinct()->count('turno'),
+            'turnos' => $turnosCollection->count(),
         ];
 
         return [
             'kpis' => $kpis,
+            'sedesMap' => $sedesMap,
             'alumnosPorGrupo' => $this->studentsByGroup($ciclo),
             'cursosPorSede' => $this->coursesByCampus($ciclo),
             'profesoresPorOrigen' => $this->professorsByOrigin($ciclo),
             'horasPorOrigen' => $this->hoursByOrigin($ciclo),
             'cursosPorOrigen' => $this->coursesByOrigin($ciclo),
             'niveles' => $this->groupsByColumn($ciclo, 'nivel'),
-            'turnos' => $this->groupsByColumn($ciclo, 'turno'),
+            'turnos' => $turnosCollection,
             'dataQuality' => [
                 'hoursCaptured' => (clone $schedules)->where(function ($query): void {
                     $query->where('horas_semanales', '>', 0)
@@ -59,7 +78,9 @@ class AcademiaDashboardService
 
     private function studentsByGroup(Ciclo $ciclo): Collection
     {
-        return AlumnoGrupo::query()
+        $sedesMap = Sede::query()->pluck('descripcion', 'id_campus')->toArray();
+
+        $rows = AlumnoGrupo::query()
             ->join('grupos', function ($join) use ($ciclo): void {
                 $join->on('grupos.codigo_grupo', '=', 'alumnos_grupos.codigo_grupo')
                     ->where('grupos.inicial', $ciclo->inicial)
@@ -70,16 +91,58 @@ class AcademiaDashboardService
             ->where('alumnos_grupos.inicial', $ciclo->inicial)
             ->where('alumnos_grupos.final', $ciclo->final)
             ->where('alumnos_grupos.periodo', $ciclo->periodo)
-            ->select('grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
+            ->select('grupos.codigo_grupo', 'grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
             ->selectRaw('COUNT(DISTINCT alumnos_grupos.numero_alumno) AS alumnos')
-            ->groupBy('grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
+            ->groupBy('grupos.codigo_grupo', 'grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
             ->orderBy('grupos.grado')
-            ->orderBy('grupos.tipo_grupo')
             ->get();
+
+        $aggregated = [];
+        foreach ($rows as $r) {
+            $partes = explode('-', strtoupper(trim((string) $r->codigo_grupo)));
+            $mod = $partes[2] ?? ($r->tipo_grupo ?: 'TR');
+            $sedeId = (int) ($partes[1] ?? ($r->id_campus ?: 1));
+            $is3C = isset($partes[4]) && $partes[4] === '3C';
+
+            $modName = match ($mod) {
+                'I' => 'INTENSIVO',
+                'B' => 'BIS',
+                'D' => 'DESPRESURIZADO',
+                'M' => 'MIXTO',
+                default => 'TRADICIONAL',
+            };
+
+            $sedeName = $sedesMap[$sedeId] ?? ($sedeId ? "Sede {$sedeId}" : 'Campus Principal');
+
+            $key = "{$r->grado}-{$mod}-{$sedeId}-".($is3C ? '3C' : 'STD');
+            if (! isset($aggregated[$key])) {
+                $aggregated[$key] = (object) [
+                    'grado' => $r->grado,
+                    'tipo_grupo' => $mod,
+                    'modalidad_corta' => $mod,
+                    'modalidad' => $modName,
+                    'id_campus' => $sedeId,
+                    'sede' => $sedeName,
+                    'es_tercer_ciclo' => $is3C,
+                    'alumnos' => 0,
+                    'grupos_count' => 0,
+                ];
+            }
+            $aggregated[$key]->alumnos += (int) $r->alumnos;
+            $aggregated[$key]->grupos_count += 1;
+        }
+
+        return collect(array_values($aggregated))->sortBy([
+            ['grado', 'asc'],
+            ['modalidad', 'asc'],
+            ['id_campus', 'asc'],
+        ])->values();
     }
 
     private function coursesByCampus(Ciclo $ciclo): Collection
     {
+        $sedesMap = Sede::query()->pluck('descripcion', 'id_campus')->toArray();
+
         return Curso::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
             ->activo()
             ->select('id_campus')
@@ -88,7 +151,12 @@ class AcademiaDashboardService
             ->selectRaw('COUNT(DISTINCT clave_asignatura) AS materias')
             ->groupBy('id_campus')
             ->orderBy('id_campus')
-            ->get();
+            ->get()
+            ->map(function ($c) use ($sedesMap) {
+                $c->sede_nombre = $sedesMap[$c->id_campus] ?? ($c->id_campus ? "Sede {$c->id_campus}" : 'Campus Principal');
+
+                return $c;
+            });
     }
 
     private function professorsByOrigin(Ciclo $ciclo): Collection
@@ -118,6 +186,8 @@ class AcademiaDashboardService
 
     private function coursesByOrigin(Ciclo $ciclo): Collection
     {
+        $sedesMap = Sede::query()->pluck('descripcion', 'id_campus')->toArray();
+
         return Curso::query()
             ->leftJoin('profesores', 'profesores.clave_profesor', '=', 'cursos.clave_profesor')
             ->porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
@@ -126,6 +196,27 @@ class AcademiaDashboardService
             ->selectRaw("COALESCE(profesores.origen_horario, 'SIN_DEFINIR') AS origen")
             ->selectRaw('COALESCE(cursos.sesiones, 0) AS sesiones')
             ->orderBy('cursos.clave_curso')
+            ->get()
+            ->map(function ($c) use ($sedesMap) {
+                $c->sede_nombre = $sedesMap[$c->id_campus] ?? ($c->id_campus ? "Sede {$c->id_campus}" : 'Campus Principal');
+
+                return $c;
+            });
+    }
+
+    private function turnosNormalizados(Ciclo $ciclo): Collection
+    {
+        return Grupo::porCiclo($ciclo->inicial, $ciclo->final, $ciclo->periodo)
+            ->activo()
+            ->whereNotNull('turno')
+            ->selectRaw("CASE 
+                WHEN UPPER(turno) LIKE 'M%' THEN 'MATUTINO' 
+                WHEN UPPER(turno) LIKE 'V%' THEN 'VESPERTINO' 
+                ELSE 'OTRO' 
+            END AS turno")
+            ->selectRaw('COUNT(*) AS grupos')
+            ->groupBy('turno')
+            ->orderBy('turno')
             ->get();
     }
 
